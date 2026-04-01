@@ -694,8 +694,9 @@ body {
   font-weight: 500;
 }
 
-.accordion-handler-agency {
+.accordion-handler-label .accordion-handler-agency {
   color: #C4A035;
+  background: none;
 }
 
 .accordion-note {
