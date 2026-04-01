@@ -593,6 +593,35 @@ body {
   border-color: var(--card-border);
 }
 
+.accordion-handler-kaimakki {
+  background: rgba(221, 240, 115, 0.06);
+}
+
+.accordion-handler-agency {
+  background: rgba(255, 176, 241, 0.06);
+}
+
+.accordion-handler-both {
+  background: linear-gradient(135deg, rgba(221, 240, 115, 0.06), rgba(255, 176, 241, 0.06));
+}
+
+.terms-section {
+  margin-bottom: 16px;
+}
+
+.terms-section:last-child {
+  margin-bottom: 0;
+}
+
+.terms-heading {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
 .accordion-header {
   display: flex;
   align-items: center;

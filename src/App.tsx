@@ -192,7 +192,7 @@ function getFrequencyLabel(postsPerMonth: number): string {
   return `${postsPerMonth}× per month`;
 }
 
-function TermsAccordionItem({ section }: { section: typeof TERMS_SECTIONS[number] }) {
+function TermsAccordion() {
   const [open, setOpen] = useState(false);
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
@@ -200,17 +200,22 @@ function TermsAccordionItem({ section }: { section: typeof TERMS_SECTIONS[number
     <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
       <button className="accordion-header" onClick={toggle}>
         <div className="accordion-title-row">
-          <span className="accordion-title">{section.title}</span>
+          <span className="accordion-title">Terms & Conditions</span>
         </div>
         <span className="accordion-arrow">{open ? "−" : "+"}</span>
       </button>
       {open && (
         <div className="accordion-body">
-          <ul className="accordion-scope">
-            {section.items.map((item, i) => (
-              <li key={i}><span>{item}</span></li>
-            ))}
-          </ul>
+          {TERMS_SECTIONS.map((section, i) => (
+            <div key={i} className="terms-section">
+              <h3 className="terms-heading">{section.title}</h3>
+              <ul className="accordion-scope">
+                {section.items.map((item, j) => (
+                  <li key={j}><span>{item}</span></li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -222,7 +227,7 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
   const toggle = useCallback(() => setOpen((o) => !o), []);
 
   return (
-    <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
+    <div className={`accordion-item accordion-handler-${stage.handler} ${open ? "accordion-open" : ""}`}>
       <button className="accordion-header" onClick={toggle}>
         {stage.handler === "both" ? (
           <span className="handler-thumbs">
@@ -497,11 +502,8 @@ export default function App() {
             ))}
           </div>
 
-          <h2 className="card-label" style={{ marginTop: "24px" }}>Terms & Conditions</h2>
-          <div className="accordion">
-            {TERMS_SECTIONS.map((section) => (
-              <TermsAccordionItem key={section.title} section={section} />
-            ))}
+          <div className="accordion" style={{ marginTop: "24px" }}>
+            <TermsAccordion />
           </div>
         </section>
 
