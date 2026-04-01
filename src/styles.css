@@ -336,6 +336,10 @@ body {
   gap: 12px;
 }
 
+.stats-grid-full {
+  grid-template-columns: repeat(4, 1fr);
+}
+
 .stat-box {
   background: var(--surface);
   border-radius: 12px;
@@ -481,6 +485,10 @@ body {
 
   .tiers-grid-full {
     grid-template-columns: repeat(3, 1fr);
+  }
+
+  .stats-grid-full {
+    grid-template-columns: 1fr 1fr;
   }
 
   .main {

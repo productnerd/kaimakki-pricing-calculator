@@ -175,37 +175,37 @@ export default function App() {
               </div>
             </section>
 
-            {/* What You Get */}
-            <section className="card">
-              <h2 className="card-label">What You Get</h2>
-              <div className="stats-grid">
-                <div className="stat-box">
-                  <div className="stat-number">{numVideos}</div>
-                  <div className="stat-label">Short-form Videos</div>
-                </div>
-                <div className="stat-box">
-                  <div className="stat-number">{numVideos}</div>
-                  <div className="stat-label">Branded Photos</div>
-                  <div className="stat-bonus">included free</div>
-                </div>
-                <div className="stat-box">
-                  <div className="stat-number">
-                    {monthsOfContent >= 1
-                      ? `${monthsOfContent.toFixed(1)}`
-                      : `${Math.round(weeksOfContent)}`}
-                  </div>
-                  <div className="stat-label">
-                    {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
-                  </div>
-                </div>
-                <div className="stat-box">
-                  <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
-                  <div className="stat-label">Avg. per Video</div>
-                </div>
-              </div>
-            </section>
           </div>
         </div>
+
+        {/* FULL WIDTH — What You Get */}
+        <section className="card card-full">
+          <div className="stats-grid stats-grid-full">
+            <div className="stat-box">
+              <div className="stat-number">{numVideos}</div>
+              <div className="stat-label">Short-form Videos</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-number">{numVideos}</div>
+              <div className="stat-label">Branded Photos</div>
+              <div className="stat-bonus">included free</div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-number">
+                {monthsOfContent >= 1
+                  ? `${monthsOfContent.toFixed(1)}`
+                  : `${Math.round(weeksOfContent)}`}
+              </div>
+              <div className="stat-label">
+                {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
+              </div>
+            </div>
+            <div className="stat-box">
+              <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
+              <div className="stat-label">Avg. per Video</div>
+            </div>
+          </div>
+        </section>
 
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
