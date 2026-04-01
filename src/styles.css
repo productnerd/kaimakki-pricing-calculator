@@ -252,6 +252,39 @@ body {
   border-color: #c8d866;
 }
 
+/* Checkbox */
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  cursor: pointer;
+}
+
+.checkbox {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  accent-color: var(--accent-green);
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.checkbox-label {
+  display: block;
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.checkbox-bonus {
+  display: block;
+  font-size: 12px;
+  color: var(--accent-pink);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
 /* Breakdown */
 .breakdown-list {
   display: flex;
@@ -291,6 +324,16 @@ body {
 .breakdown-amount {
   color: var(--text);
   font-weight: 600;
+}
+
+.strategy-row {
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.strategy-amount {
+  color: var(--accent-pink);
+  font-weight: 700;
 }
 
 /* Totals */

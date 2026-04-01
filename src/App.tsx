@@ -72,9 +72,12 @@ function getFrequencyLabel(postsPerMonth: number): string {
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
   const [postsPerMonth, setPostsPerMonth] = useState(4);
+  const [agencyHandlesStrategy, setAgencyHandlesStrategy] = useState(false);
 
   const perWeek = postsPerMonth / 4.33;
-  const { total, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
+  const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
+  const strategyDiscount = agencyHandlesStrategy ? 0.10 : 0;
+  const total = Math.round(baseTotal * (1 - strategyDiscount));
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
@@ -139,6 +142,22 @@ export default function App() {
               </div>
             </section>
 
+            {/* Strategy checkbox */}
+            <section className="card">
+              <label className="checkbox-row">
+                <input
+                  type="checkbox"
+                  checked={agencyHandlesStrategy}
+                  onChange={(e) => setAgencyHandlesStrategy(e.target.checked)}
+                  className="checkbox"
+                />
+                <div>
+                  <span className="checkbox-label">Agency handles strategy, video concept ideation &amp; prioritisation</span>
+                  <span className="checkbox-bonus">10% discount applied</span>
+                </div>
+              </label>
+            </section>
+
           </div>
 
           {/* RIGHT COLUMN — Results */}
@@ -167,6 +186,12 @@ export default function App() {
               </div>
 
               <div className="totals">
+                {agencyHandlesStrategy && (
+                  <div className="breakdown-row strategy-row">
+                    <span className="breakdown-desc">Strategy discount</span>
+                    <span className="strategy-amount">-&euro;{Math.round(baseTotal * 0.10).toLocaleString()}</span>
+                  </div>
+                )}
                 <div className="total-row">
                   <span>Total Investment</span>
                   <span className="total-amount">&euro;{total.toLocaleString()}</span>
