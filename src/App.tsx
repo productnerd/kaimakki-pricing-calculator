@@ -25,8 +25,8 @@ const PRODUCTION_STAGES = [
     handler: "kaimakki" as const,
     note: "",
     scope: [
-      { text: "Prepare scripts — if relevant" },
-      { text: "Prepare shot-list — if relevant" },
+      { text: "Prepare scripts — if relevant", owner: "" },
+      { text: "Prepare shot-list — if relevant", owner: "" },
     ],
   },
   {
@@ -35,8 +35,8 @@ const PRODUCTION_STAGES = [
     handler: "kaimakki" as const,
     note: "",
     scope: [
-      { text: "Travel to place" },
-      { text: "Coordinate shoot as per pre-production" },
+      { text: "Travel to place", owner: "" },
+      { text: "Coordinate shoot as per pre-production", owner: "" },
     ],
   },
   {
@@ -44,7 +44,7 @@ const PRODUCTION_STAGES = [
     frequency: "Per video",
     handler: "kaimakki" as const,
     note: "",
-    scope: [{ text: "Editing" }],
+    scope: [{ text: "Editing", owner: "" }],
   },
   {
     title: "Account Management",
@@ -52,11 +52,11 @@ const PRODUCTION_STAGES = [
     handler: "agency" as const,
     note: "",
     scope: [
-      { text: "Coordinate shoot dates" },
-      { text: "Get auxiliary media (extra photos, old footage etc)" },
-      { text: "Get other information necessary during the editing phase" },
-      { text: "Get feedback and approval from client for preproduction" },
-      { text: "Get feedback and approval from client for final video" },
+      { text: "Coordinate shoot dates", owner: "" },
+      { text: "Get auxiliary media (extra photos, old footage etc)", owner: "" },
+      { text: "Get other information necessary during the editing phase", owner: "" },
+      { text: "Get feedback and approval from client for preproduction", owner: "" },
+      { text: "Get feedback and approval from client for final video", owner: "" },
     ],
   },
 ];
