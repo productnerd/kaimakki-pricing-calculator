@@ -348,6 +348,35 @@ export default function App() {
               <div className="stat-label">Avg. per Video</div>
             </div>
           </div>
+
+          <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks for Agencies</h2>
+          <div className="perks-grid">
+            <div className="perk-item">
+              <span className="perk-icon">⚡</span>
+              <div>
+                <strong className="perk-title">Faster Postproduction</strong>
+                <p className="perk-desc">3-day post-shoot delivery (standard is 4–5) for first video</p>
+              </div>
+            </div>
+            <div className="perk-item">
+              <span className="perk-icon">🚨</span>
+              <div>
+                <strong className="perk-title">Emergency Productions</strong>
+                <p className="perk-desc">
+                  {numVideos <= 2
+                    ? "1 video can have urgent delivery with 24h post-shoot turnaround"
+                    : `${Math.floor(numVideos * 0.25)} of your ${numVideos} videos can have urgent delivery with 24h post-shoot turnaround`}
+                </p>
+              </div>
+            </div>
+            <div className="perk-item">
+              <span className="perk-icon">🎥</span>
+              <div>
+                <strong className="perk-title">Drone Shots</strong>
+                <p className="perk-desc">Included in all shoots if necessary</p>
+              </div>
+            </div>
+          </div>
         </section>
 
         {/* FULL WIDTH — Tier Reference */}
@@ -376,38 +405,6 @@ export default function App() {
                 </div>
               );
             })}
-          </div>
-        </section>
-
-        {/* FULL WIDTH — Extra Perks */}
-        <section className="card card-full">
-          <h2 className="card-label">Extra Perks for Agencies</h2>
-          <div className="perks-grid">
-            <div className="perk-item">
-              <span className="perk-icon">⚡</span>
-              <div>
-                <strong className="perk-title">Faster Postproduction</strong>
-                <p className="perk-desc">3-day post-shoot delivery (standard is 4–5) for first video</p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <span className="perk-icon">🚨</span>
-              <div>
-                <strong className="perk-title">Emergency Productions</strong>
-                <p className="perk-desc">
-                  {numVideos <= 2
-                    ? "1 video can have urgent delivery with 24h post-shoot turnaround"
-                    : `${Math.floor(numVideos * 0.25)} of your ${numVideos} videos can have urgent delivery with 24h post-shoot turnaround`}
-                </p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <span className="perk-icon">🎥</span>
-              <div>
-                <strong className="perk-title">Drone Shots</strong>
-                <p className="perk-desc">Included in all shoots if necessary</p>
-              </div>
-            </div>
           </div>
         </section>
 
