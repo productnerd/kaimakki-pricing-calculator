@@ -61,6 +61,70 @@ const PRODUCTION_STAGES = [
   },
 ];
 
+const TERMS_SECTIONS = [
+  {
+    title: "Service",
+    items: [
+      "Prices do not include posting or setting up social media accounts. We can propose a content calendar but the marketing agency is to handle both.",
+      "We do not handle community management (responding to comments and DMs).",
+      "Prices are for a single client. Agency cannot purchase a pack of 20 videos and use it across 2+ clients. This is because there is a fixed cost per client for onboarding, strategy and comms as well as the shooting. It also keeps accounts more tidy.",
+      "Prices include video PLUS the same amount of photos (that can also be used as social media posts: static image or carousel).",
+      "Shoot time is proportional to the number of videos: 4 videos, 4 hours, +30 minutes for every extra video. So for example for 8 videos the max shoot time is 6 hours.",
+      "For Limassol: Transport to and from the location beyond a single location is included in the shoot time. This means that if two shoots are needed and the total shoot time is 4 hours then we will subtract the transport time of the second shoot from the 4 hours.",
+      "Outside Limassol: Given the extra hours on the road and fuel costs, this will incur an additional cost of €60 per shoot.",
+    ],
+  },
+  {
+    title: "Account Management / Communications",
+    items: [
+      "Communication between the client and Kaimakki is owned either entirely by the marketing agency or by the client. We are happy to speak with both but for better collaboration it is important to define a single POC and decision maker.",
+      "This decision maker is to sign off on the videos we will make, provide input for scripts and edits. This POC can talk to other stakeholders of course to gather feedback and insights but they are responsible to be the single POC with Kaimakki.",
+    ],
+  },
+  {
+    title: "Meetings",
+    items: [
+      "30' intro meeting with free proposal.",
+      "1h monthly strategy & performance meeting after we sign where we agree exactly what to shoot — this can be handled either by agency or Kaimakki.",
+      "No additional meetings unless otherwise agreed.",
+    ],
+  },
+  {
+    title: "Strategy & Video Prioritisation",
+    items: [
+      "Kaimakki has to agree to the scope of each video after each strategy session.",
+      "As you might appreciate, different video formats require different effort for both pre, film and post. Handling this part well includes being able to balance this effort/quality. If the effort is too high given the price per video, Kaimakki might have to propose alternatives or tweaks to keep the production effort 'reasonable'.",
+    ],
+  },
+  {
+    title: "Iteration Policy",
+    items: [
+      "Two iterations allowed during pre-production. One from agency and another from client.",
+      "Two iterations allowed on final video edit. One from agency and another from client.",
+      "Iteration feedback can be done over the phone & email.",
+    ],
+  },
+  {
+    title: "Refund Policy",
+    items: [
+      "50% payment upfront. Non-refundable unless Kaimakki cancels.",
+      "50% at the end of the collaboration.",
+    ],
+  },
+  {
+    title: "Posting",
+    items: [
+      "Our plans are monthly & quarterly for different number of videos per week. Consistency is important for social media algorithms so it is essential that as a minimum, two pieces of content are posted per week (our smallest plan).",
+    ],
+  },
+  {
+    title: "Credits",
+    items: [
+      "Kaimakki is permitted to use the logo of the client as well as the produced video and performance metrics in their website and portfolio. For select posts, Kaimakki might request to be tagged in the video description.",
+    ],
+  },
+];
+
 const AGENCY_TIERS = [
   { min: 1, max: 4, price: 165, normalPrice: 197 },
   { min: 5, max: 8, price: 148, normalPrice: null },
@@ -126,6 +190,31 @@ function getFrequencyLabel(postsPerMonth: number): string {
   if (postsPerMonth === 4) return "1× per week";
   if (postsPerMonth === 8) return "2× per week";
   return `${postsPerMonth}× per month`;
+}
+
+function TermsAccordionItem({ section }: { section: typeof TERMS_SECTIONS[number] }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useCallback(() => setOpen((o) => !o), []);
+
+  return (
+    <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
+      <button className="accordion-header" onClick={toggle}>
+        <div className="accordion-title-row">
+          <span className="accordion-title">{section.title}</span>
+        </div>
+        <span className="accordion-arrow">{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <div className="accordion-body">
+          <ul className="accordion-scope">
+            {section.items.map((item, i) => (
+              <li key={i}><span>{item}</span></li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
@@ -405,6 +494,13 @@ export default function App() {
           <div className="accordion">
             {PRODUCTION_STAGES.map((stage) => (
               <AccordionItem key={stage.title} stage={stage} />
+            ))}
+          </div>
+
+          <h2 className="card-label" style={{ marginTop: "24px" }}>Terms & Conditions</h2>
+          <div className="accordion">
+            {TERMS_SECTIONS.map((section) => (
+              <TermsAccordionItem key={section.title} section={section} />
             ))}
           </div>
         </section>
