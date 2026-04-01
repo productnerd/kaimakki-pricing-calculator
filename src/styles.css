@@ -598,11 +598,11 @@ body {
 }
 
 .accordion-handler-agency {
-  background: rgba(255, 176, 241, 0.06);
+  background: rgba(139, 105, 20, 0.12);
 }
 
 .accordion-handler-both {
-  background: linear-gradient(135deg, rgba(221, 240, 115, 0.06), rgba(255, 176, 241, 0.06));
+  background: linear-gradient(135deg, rgba(221, 240, 115, 0.06), rgba(139, 105, 20, 0.12));
 }
 
 .terms-section {
@@ -670,8 +670,8 @@ body {
 }
 
 .handler-agency {
-  background: var(--accent-pink);
-  color: var(--bg);
+  background: #8B6914;
+  color: var(--text);
   font-size: 14px;
   font-weight: 700;
 }
@@ -695,7 +695,7 @@ body {
 }
 
 .accordion-handler-agency {
-  color: var(--accent-pink);
+  color: #C4A035;
 }
 
 .accordion-note {
@@ -767,8 +767,8 @@ body {
 }
 
 .owner-agency {
-  background: var(--accent-pink-dim);
-  color: var(--accent-pink);
+  background: rgba(139, 105, 20, 0.25);
+  color: #C4A035;
 }
 
 .owner-both {
