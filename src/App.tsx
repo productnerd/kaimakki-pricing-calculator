@@ -321,15 +321,18 @@ export default function App() {
         <section className="card card-full">
           <div className="stats-grid stats-grid-full">
             <div className="stat-box">
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m10 9 4-2v6l-4-2z"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
               <div className="stat-number">{numVideos}</div>
               <div className="stat-label">Short-form Videos</div>
             </div>
             <div className="stat-box">
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
               <div className="stat-number">{numVideos}</div>
               <div className="stat-label">Branded Photos</div>
               <div className="stat-bonus">included free</div>
             </div>
             <div className="stat-box">
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               <div className="stat-number">
                 {monthsOfContent >= 1
                   ? `${monthsOfContent.toFixed(1)}`
@@ -340,6 +343,7 @@ export default function App() {
               </div>
             </div>
             <div className="stat-box">
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.4-1-1.2-1.5-2.5-1.5-1.7 0-2.5.9-2.5 2s.8 1.8 2.5 2c1.7.2 2.5 1 2.5 2s-.8 2-2.5 2c-1.3 0-2.1-.5-2.5-1.5"/><line x1="12" y1="6.5" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="17.5"/></svg>
               <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
               <div className="stat-label">Avg. per Video</div>
             </div>

@@ -397,6 +397,13 @@ body {
   text-align: center;
 }
 
+.stat-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
 .stat-number {
   font-size: 32px;
   font-weight: 900;
