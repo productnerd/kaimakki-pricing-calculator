@@ -527,6 +527,37 @@ body {
   letter-spacing: 1px;
 }
 
+/* Perks */
+.perks-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.perk-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.perk-icon {
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+.perk-title {
+  font-size: 14px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.perk-desc {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-top: 2px;
+  line-height: 1.5;
+}
+
 /* Accordion */
 .accordion {
   display: flex;
