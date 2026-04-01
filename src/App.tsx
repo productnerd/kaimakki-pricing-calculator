@@ -59,24 +59,26 @@ const MIN_VIDEOS = 4;
 const MAX_VIDEOS = 50;
 const MAX_PER_WEEK = 2;
 
-const FREQUENCY_OPTIONS = [
-  { label: "1 per month", perWeek: 1 / 4.33 },
-  { label: "2 per month", perWeek: 2 / 4.33 },
-  { label: "3 per month", perWeek: 3 / 4.33 },
-  { label: "1 per week", perWeek: 1 },
-  { label: "2 per week", perWeek: 2 },
-];
+const MIN_POSTS = 1;
+const MAX_POSTS = 8; // per month
+
+function getFrequencyLabel(postsPerMonth: number): string {
+  if (postsPerMonth <= 3) return `${postsPerMonth}× per month`;
+  if (postsPerMonth === 4) return "1× per week";
+  if (postsPerMonth === 8) return "2× per week";
+  return `${postsPerMonth}× per month`;
+}
 
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
-  const [frequencyIdx, setFrequencyIdx] = useState(3);
+  const [postsPerMonth, setPostsPerMonth] = useState(4);
 
-  const frequency = FREQUENCY_OPTIONS[frequencyIdx];
+  const perWeek = postsPerMonth / 4.33;
   const { total, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
-  const weeksOfContent = frequency.perWeek > 0 ? numVideos / frequency.perWeek : 0;
+  const weeksOfContent = perWeek > 0 ? numVideos / perWeek : 0;
   const monthsOfContent = weeksOfContent / 4.33;
 
   const avgPrice = numVideos > 0 ? total / numVideos : 0;
@@ -120,16 +122,20 @@ export default function App() {
             {/* Frequency */}
             <section className="card">
               <label className="card-label">How often will you post?</label>
-              <div className="frequency-grid">
-                {FREQUENCY_OPTIONS.map((opt, i) => (
-                  <button
-                    key={opt.label}
-                    onClick={() => setFrequencyIdx(i)}
-                    className={`freq-btn ${frequencyIdx === i ? "freq-btn-active" : ""}`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={MIN_POSTS}
+                  max={MAX_POSTS}
+                  value={postsPerMonth}
+                  onChange={(e) => setPostsPerMonth(Number(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value slider-value-sm">{getFrequencyLabel(postsPerMonth)}</div>
+              </div>
+              <div className="slider-hints">
+                <span>1×/mo</span>
+                <span>2×/wk</span>
               </div>
             </section>
 
