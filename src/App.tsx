@@ -44,7 +44,10 @@ function calculateTotal(numVideos: number) {
     const tierCapacity = tier.max - tier.min + 1;
     const videosInTier = Math.min(remaining, tierCapacity);
     total += videosInTier * tier.price;
-    normalTotal += videosInTier * (tier.normalPrice ?? tier.price);
+    // For tiers without a normal price, derive it from the interpolated discount
+    const discount = getTierDiscount(idx);
+    const impliedNormal = tier.normalPrice ?? Math.round(tier.price / (1 - discount / 100));
+    normalTotal += videosInTier * impliedNormal;
     breakdown.push({ count: videosInTier, price: tier.price, normalPrice: tier.normalPrice, tierIndex: idx });
     remaining -= videosInTier;
   }
