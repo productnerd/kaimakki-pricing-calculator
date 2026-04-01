@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import "./styles.css";
+import logo from "./kaimakkilogo.png";
 
 const AGENCY_TIERS = [
   { min: 1, max: 4, price: 165, normalPrice: 197 },
@@ -29,6 +30,7 @@ function calculateTotal(numVideos: number) {
   return { total, normalTotal, breakdown };
 }
 
+const MIN_VIDEOS = 4;
 const MAX_VIDEOS = 50;
 const MAX_PER_WEEK = 2;
 
@@ -42,7 +44,7 @@ const FREQUENCY_OPTIONS = [
 
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
-  const [frequencyIdx, setFrequencyIdx] = useState(3); // default: 1 per week
+  const [frequencyIdx, setFrequencyIdx] = useState(3);
 
   const frequency = FREQUENCY_OPTIONS[frequencyIdx];
   const { total, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
@@ -52,10 +54,7 @@ export default function App() {
   const weeksOfContent = frequency.perWeek > 0 ? numVideos / frequency.perWeek : 0;
   const monthsOfContent = weeksOfContent / 4.33;
 
-  // Calculate per-video average price
   const avgPrice = numVideos > 0 ? total / numVideos : 0;
-
-  // Calculate savings vs normal pricing
   const savings = normalTotal - total;
   const discountPct = normalTotal > 0 ? Math.round((savings / normalTotal) * 100) : 0;
 
@@ -63,138 +62,131 @@ export default function App() {
     <div className="page">
       {/* Header */}
       <header className="header">
-        <h1 className="logo">KAIMAKKI</h1>
+        <a href="https://kaimakki.com" target="_blank" rel="noopener noreferrer" className="logo-link">
+          <img src={logo} alt="Kaimakki" className="logo-img" />
+        </a>
         <p className="subtitle">Agency Pricing Calculator</p>
-        <p className="tagline">Short-form video content that makes your brand unforgettable</p>
       </header>
 
       <main className="main">
-        {/* Video Count */}
-        <section className="card">
-          <label className="card-label">How many videos do you need?</label>
-          <div className="slider-row">
-            <input
-              type="range"
-              min={1}
-              max={MAX_VIDEOS}
-              value={numVideos}
-              onChange={(e) => setNumVideos(Number(e.target.value))}
-              className="slider"
-            />
-            <div className="slider-value">{numVideos}</div>
-          </div>
-          <div className="slider-hints">
-            <span>1</span>
-            <span>50</span>
-          </div>
-        </section>
+        <div className="two-col">
+          {/* LEFT COLUMN — Inputs */}
+          <div className="col-left">
+            {/* Video Count */}
+            <section className="card">
+              <label className="card-label">How many videos do you need?</label>
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={MIN_VIDEOS}
+                  max={MAX_VIDEOS}
+                  value={numVideos}
+                  onChange={(e) => setNumVideos(Number(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value">{numVideos}</div>
+              </div>
+              <div className="slider-hints">
+                <span>4</span>
+                <span>50</span>
+              </div>
+            </section>
 
-        {/* Frequency */}
-        <section className="card">
-          <label className="card-label">How often will you post?</label>
-          <div className="frequency-grid">
-            {FREQUENCY_OPTIONS.map((opt, i) => (
-              <button
-                key={opt.label}
-                onClick={() => setFrequencyIdx(i)}
-                className={`freq-btn ${frequencyIdx === i ? "freq-btn-active" : ""}`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </section>
+            {/* Frequency */}
+            <section className="card">
+              <label className="card-label">How often will you post?</label>
+              <div className="frequency-grid">
+                {FREQUENCY_OPTIONS.map((opt, i) => (
+                  <button
+                    key={opt.label}
+                    onClick={() => setFrequencyIdx(i)}
+                    className={`freq-btn ${frequencyIdx === i ? "freq-btn-active" : ""}`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </section>
 
-        {/* Price Breakdown */}
-        <section className="card">
-          <h2 className="card-label">Price Breakdown</h2>
-          <p className="card-note">Pricing is progressive — each tier applies only to videos in that range</p>
-          <div className="breakdown-list">
-            {breakdown.map((tier, i) => {
-              const tierDiscount = Math.round(((tier.normalPrice - tier.price) / tier.normalPrice) * 100);
-              return (
-                <div key={i} className="breakdown-row">
-                  <span className="breakdown-desc">
-                    {tier.count} video{tier.count > 1 ? "s" : ""} &times;{" "}
-                    <span className="price-normal">&euro;{tier.normalPrice}</span>{" "}
-                    &euro;{tier.price}
-                    <span className="discount-badge">-{tierDiscount}%</span>
-                  </span>
-                  <span className="breakdown-amount">&euro;{(tier.count * tier.price).toLocaleString()}</span>
+          </div>
+
+          {/* RIGHT COLUMN — Results */}
+          <div className="col-right">
+            {/* Price Breakdown */}
+            <section className="card">
+              <h2 className="card-label">Price Breakdown</h2>
+              <p className="card-note">Pricing is progressive — each tier applies only to videos in that range</p>
+              <div className="breakdown-list">
+                {breakdown.map((tier, i) => {
+                  const tierDiscount = Math.round(((tier.normalPrice - tier.price) / tier.normalPrice) * 100);
+                  return (
+                    <div key={i} className="breakdown-row">
+                      <span className="breakdown-desc">
+                        {tier.count} video{tier.count > 1 ? "s" : ""} &times;{" "}
+                        <span className="price-normal">&euro;{tier.normalPrice}</span>{" "}
+                        &euro;{tier.price}
+                        <span className="discount-badge">-{tierDiscount}%</span>
+                      </span>
+                      <span className="breakdown-amount">&euro;{(tier.count * tier.price).toLocaleString()}</span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="totals">
+                <div className="total-row">
+                  <span>Total Investment</span>
+                  <span className="total-amount">&euro;{total.toLocaleString()}</span>
                 </div>
-              );
-            })}
-          </div>
-
-          <div className="totals">
-            <div className="total-row">
-              <span>Total Investment</span>
-              <span className="total-amount">&euro;{total.toLocaleString()}</span>
-            </div>
-            <div className="total-row prepay-row">
-              <span>Prepayment (50% upfront)</span>
-              <span className="prepay-amount">&euro;{prepayment.toLocaleString()}</span>
-            </div>
-            {savings > 0 && (
-              <div className="savings-row">
-                <span>Agency discount</span>
-                <span>&euro;{savings.toLocaleString()} saved ({discountPct}% off normal pricing)</span>
+                <div className="total-row prepay-row">
+                  <span>Prepayment (50% upfront)</span>
+                  <span className="prepay-amount">&euro;{prepayment.toLocaleString()}</span>
+                </div>
+                {savings > 0 && (
+                  <div className="savings-row">
+                    <span>Agency discount</span>
+                    <span>&euro;{savings.toLocaleString()} saved ({discountPct}% off normal pricing)</span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
-        </section>
+            </section>
 
-        {/* What You Get */}
-        <section className="card">
-          <h2 className="card-label">What You Get</h2>
-          <div className="stats-grid">
-            <div className="stat-box">
-              <div className="stat-number">{numVideos}</div>
-              <div className="stat-label">Short-form Videos</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-number">{numVideos}</div>
-              <div className="stat-label">Branded Photos</div>
-              <div className="stat-bonus">included free</div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-number">
-                {monthsOfContent >= 1
-                  ? `${monthsOfContent.toFixed(1)}`
-                  : `${Math.round(weeksOfContent)}`}
+            {/* What You Get */}
+            <section className="card">
+              <h2 className="card-label">What You Get</h2>
+              <div className="stats-grid">
+                <div className="stat-box">
+                  <div className="stat-number">{numVideos}</div>
+                  <div className="stat-label">Short-form Videos</div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-number">{numVideos}</div>
+                  <div className="stat-label">Branded Photos</div>
+                  <div className="stat-bonus">included free</div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-number">
+                    {monthsOfContent >= 1
+                      ? `${monthsOfContent.toFixed(1)}`
+                      : `${Math.round(weeksOfContent)}`}
+                  </div>
+                  <div className="stat-label">
+                    {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
+                  </div>
+                </div>
+                <div className="stat-box">
+                  <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
+                  <div className="stat-label">Avg. per Video</div>
+                </div>
               </div>
-              <div className="stat-label">
-                {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
-              </div>
-            </div>
-            <div className="stat-box">
-              <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
-              <div className="stat-label">Avg. per Video</div>
-            </div>
+            </section>
           </div>
-        </section>
+        </div>
 
-        {/* Delivery Info */}
-        <section className="card delivery-card">
-          <div className="delivery-row">
-            <div className="delivery-icon">&#9202;</div>
-            <div>
-              <strong>Production time:</strong> {weeksToDeliver} week{weeksToDeliver !== 1 ? "s" : ""}
-              <span className="delivery-note"> (max 2 videos/week)</span>
-            </div>
-          </div>
-          <div className="delivery-row">
-            <div className="delivery-icon">&#128247;</div>
-            <div>
-              <strong>{numVideos} photos</strong> included with your videos — same shoot, no extra cost
-            </div>
-          </div>
-        </section>
-
-        {/* Tier Reference */}
-        <section className="card">
+        {/* FULL WIDTH — Tier Reference */}
+        <section className="card card-full">
           <h2 className="card-label">Agency Price Tiers</h2>
-          <div className="tiers-grid">
+          <div className="tiers-grid tiers-grid-full">
             {AGENCY_TIERS.map((tier) => {
               const isActive = numVideos >= tier.min;
               const tierDiscount = Math.round(((tier.normalPrice - tier.price) / tier.normalPrice) * 100);
@@ -216,10 +208,8 @@ export default function App() {
           </div>
         </section>
 
-        {/* Footer */}
         <footer className="footer">
-          <p>Maximum production pace: 2 videos per week &middot; All prices exclude VAT</p>
-          <p className="footer-brand">kaimakki.com</p>
+          <p>made with meraki by kaimakki 🤍</p>
         </footer>
       </main>
     </div>
