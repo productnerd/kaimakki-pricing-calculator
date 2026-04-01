@@ -150,9 +150,6 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
         )}
         <div className="accordion-title-row">
           <span className="accordion-title">{stage.title}</span>
-          {stage.handler === "kaimakki" && (
-            <span className="accordion-handler-label">Kaimakki</span>
-          )}
           {stage.handler === "agency" && (
             <span className="accordion-handler-label accordion-handler-agency">Agency</span>
           )}
