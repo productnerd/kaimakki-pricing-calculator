@@ -553,9 +553,12 @@ body {
   gap: 14px;
 }
 
-.perk-icon {
-  font-size: 22px;
-  line-height: 1.4;
+.perk-icon-svg {
+  width: 22px;
+  height: 22px;
+  min-width: 22px;
+  color: var(--text-muted);
+  margin-top: 2px;
 }
 
 .perk-title {
@@ -616,6 +619,15 @@ body {
   justify-content: center;
   overflow: hidden;
   flex-shrink: 0;
+}
+
+.handler-thumbs {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.handler-thumb-overlap {
+  margin-left: -10px;
 }
 
 .handler-kaimakki {

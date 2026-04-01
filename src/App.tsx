@@ -6,8 +6,8 @@ const PRODUCTION_STAGES = [
   {
     title: "Social Media Strategy & Video Concept Ideation",
     frequency: "Once per month",
-    handler: "kaimakki" as const,
-    note: "10% Discount if handled by agency",
+    handler: "both" as const,
+    note: "",
     scope: [
       "Analyse performance from last month. Setup new 'experiments'",
       "Research latest trends",
@@ -134,7 +134,14 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
   return (
     <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
       <button className="accordion-header" onClick={toggle}>
-        {stage.handler === "kaimakki" ? (
+        {stage.handler === "both" ? (
+          <span className="handler-thumbs">
+            <span className="handler-thumb handler-kaimakki">
+              <img src={logo} alt="Kaimakki" />
+            </span>
+            <span className="handler-thumb handler-agency handler-thumb-overlap">A</span>
+          </span>
+        ) : stage.handler === "kaimakki" ? (
           <span className="handler-thumb handler-kaimakki">
             <img src={logo} alt="Kaimakki" />
           </span>
@@ -148,6 +155,9 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
           )}
           {stage.handler === "agency" && (
             <span className="accordion-handler-label accordion-handler-agency">Agency</span>
+          )}
+          {stage.handler === "both" && (
+            <span className="accordion-handler-label">Kaimakki <span className="accordion-handler-agency">+ Agency</span></span>
           )}
           {stage.note && <span className="accordion-note">{stage.note}</span>}
         </div>
@@ -174,12 +184,10 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
   const [postsPerMonth, setPostsPerMonth] = useState(4);
-  const [agencyHandlesStrategy, setAgencyHandlesStrategy] = useState(false);
 
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
-  const strategyDiscount = agencyHandlesStrategy ? 0.10 : 0;
-  const total = Math.round(baseTotal * (1 - strategyDiscount));
+  const total = baseTotal;
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
@@ -244,25 +252,6 @@ export default function App() {
               </div>
             </section>
 
-            {/* Strategy checkbox */}
-            <section className="card">
-              <label className="checkbox-row">
-                <input
-                  type="checkbox"
-                  checked={agencyHandlesStrategy}
-                  onChange={(e) => setAgencyHandlesStrategy(e.target.checked)}
-                  className="checkbox"
-                />
-                <div>
-                  <span className="checkbox-label">Agency handles strategy, video concept ideation &amp; prioritisation</span>
-                  <span className="checkbox-bonus">10% discount applied</span>
-                </div>
-              </label>
-              <p className="card-note" style={{ marginTop: "12px", marginBottom: 0 }}>
-                We recommend Kaimakki handles strategy for the best results
-              </p>
-            </section>
-
           </div>
 
           {/* RIGHT COLUMN — Results */}
@@ -291,12 +280,6 @@ export default function App() {
               </div>
 
               <div className="totals">
-                {agencyHandlesStrategy && (
-                  <div className="breakdown-row strategy-row">
-                    <span className="breakdown-desc">Strategy discount</span>
-                    <span className="strategy-amount">-&euro;{Math.round(baseTotal * 0.10).toLocaleString()}</span>
-                  </div>
-                )}
                 <div className="total-row">
                   <span>Total Investment</span>
                   <span className="total-amount">&euro;{total.toLocaleString()}</span>
@@ -352,14 +335,14 @@ export default function App() {
           <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks for Agencies</h2>
           <div className="perks-grid">
             <div className="perk-item">
-              <span className="perk-icon">⚡</span>
+              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
               <div>
                 <strong className="perk-title">Faster Postproduction</strong>
                 <p className="perk-desc">3-day post-shoot delivery (standard is 4–5) for first video</p>
               </div>
             </div>
             <div className="perk-item">
-              <span className="perk-icon">🚨</span>
+              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7v4.28l-1.66 3.32A1 1 0 004.23 18h15.54a1 1 0 00.89-1.4L19 13.28V9a7 7 0 00-7-7zm-2 18a2 2 0 004 0h-4z"/></svg>
               <div>
                 <strong className="perk-title">Emergency Productions</strong>
                 <p className="perk-desc">
@@ -370,7 +353,7 @@ export default function App() {
               </div>
             </div>
             <div className="perk-item">
-              <span className="perk-icon">🎥</span>
+              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.69 2 8v8c0 3.31 4.48 6 10 6s10-2.69 10-6V8c0-3.31-4.48-6-10-6zm0 2c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4zM6.5 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/><path d="M15 12l4 2.5V9.5L15 12z"/></svg>
               <div>
                 <strong className="perk-title">Drone Shots</strong>
                 <p className="perk-desc">Included in all shoots if necessary</p>
