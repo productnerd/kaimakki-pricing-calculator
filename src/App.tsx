@@ -9,13 +9,13 @@ const PRODUCTION_STAGES = [
     handler: "both" as const,
     note: "",
     scope: [
-      "Analyse performance from last month. Setup new 'experiments'",
-      "Research latest trends",
-      "Align with client on new products, campaigns, events, special dates (eg Easter) for coming month — adjust video strategy",
-      "Present three ideas per video for client to choose from",
-      "Prioritise list of videos, carousels and photos for next month",
-      "Understand brand, video & comms style of client",
-      "Run strategy call — 1-2h",
+      { text: "Understand brand, video & comms style of client", owner: "agency" },
+      { text: "Align with client on new products, campaigns, events, special dates (eg Easter) for coming month — adjust video strategy", owner: "agency" },
+      { text: "Social media high level strategy", owner: "both" },
+      { text: "Analyse performance from last month. Setup new 'experiments'", owner: "kaimakki" },
+      { text: "Research latest trends", owner: "kaimakki" },
+      { text: "Present three ideas per video for agency to present to client", owner: "kaimakki" },
+      { text: "Prioritise list of videos, carousels and photos for next month with client -using above list if they so wish- and communicate with Kaimakki", owner: "agency" },
     ],
   },
   {
@@ -24,8 +24,8 @@ const PRODUCTION_STAGES = [
     handler: "kaimakki" as const,
     note: "",
     scope: [
-      "Prepare scripts — if relevant",
-      "Prepare shot-list — if relevant",
+      { text: "Prepare scripts — if relevant" },
+      { text: "Prepare shot-list — if relevant" },
     ],
   },
   {
@@ -34,8 +34,8 @@ const PRODUCTION_STAGES = [
     handler: "kaimakki" as const,
     note: "",
     scope: [
-      "Travel to place",
-      "Coordinate shoot as per pre-production",
+      { text: "Travel to place" },
+      { text: "Coordinate shoot as per pre-production" },
     ],
   },
   {
@@ -43,7 +43,7 @@ const PRODUCTION_STAGES = [
     frequency: "Per video",
     handler: "kaimakki" as const,
     note: "",
-    scope: ["Editing"],
+    scope: [{ text: "Editing" }],
   },
   {
     title: "Account Management",
@@ -51,11 +51,11 @@ const PRODUCTION_STAGES = [
     handler: "agency" as const,
     note: "",
     scope: [
-      "Coordinate shoot dates",
-      "Get auxiliary media (extra photos, old footage etc)",
-      "Get other information necessary during the editing phase",
-      "Get feedback and approval from client for preproduction",
-      "Get feedback and approval from client for final video",
+      { text: "Coordinate shoot dates" },
+      { text: "Get auxiliary media (extra photos, old footage etc)" },
+      { text: "Get other information necessary during the editing phase" },
+      { text: "Get feedback and approval from client for preproduction" },
+      { text: "Get feedback and approval from client for final video" },
     ],
   },
 ];
@@ -172,7 +172,14 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
           )}
           <ul className="accordion-scope">
             {stage.scope.map((item, i) => (
-              <li key={i}>{item}</li>
+              <li key={i}>
+                <span>{item.text}</span>
+                {item.owner && (
+                  <span className={`owner-pill owner-${item.owner}`}>
+                    {item.owner === "kaimakki" ? "Kaimakki" : item.owner === "agency" ? "Agency" : "Kaimakki + Agency"}
+                  </span>
+                )}
+              </li>
             ))}
           </ul>
         </div>
