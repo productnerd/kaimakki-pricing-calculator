@@ -592,6 +592,36 @@ body {
   gap: 12px;
 }
 
+/* Handler thumbnails */
+.handler-thumb {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.handler-kaimakki {
+  background: var(--accent-green);
+}
+
+.handler-kaimakki img {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.handler-agency {
+  background: var(--accent-pink);
+  color: var(--bg);
+  font-size: 14px;
+  font-weight: 700;
+}
+
 .accordion-title-row {
   display: flex;
   flex-direction: column;
@@ -604,7 +634,17 @@ body {
   font-weight: 600;
 }
 
-.accordion-ownership {
+.accordion-handler-label {
+  font-size: 11px;
+  color: var(--accent-green);
+  font-weight: 500;
+}
+
+.accordion-handler-agency {
+  color: var(--accent-pink);
+}
+
+.accordion-note {
   font-size: 11px;
   color: var(--accent-pink);
   font-weight: 500;

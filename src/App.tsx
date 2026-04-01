@@ -6,7 +6,8 @@ const PRODUCTION_STAGES = [
   {
     title: "Social Media Strategy & Video Concept Ideation",
     frequency: "Once per month",
-    ownership: "10% Discount if handled by agency",
+    handler: "kaimakki" as const,
+    note: "10% Discount if handled by agency",
     scope: [
       "Analyse performance from last month. Setup new 'experiments'",
       "Research latest trends",
@@ -20,7 +21,8 @@ const PRODUCTION_STAGES = [
   {
     title: "Pre-production",
     frequency: "Per video (depends on format)",
-    ownership: "Kaimakki",
+    handler: "kaimakki" as const,
+    note: "",
     scope: [
       "Prepare scripts — if relevant",
       "Prepare shot-list — if relevant",
@@ -29,7 +31,8 @@ const PRODUCTION_STAGES = [
   {
     title: "Filming",
     frequency: "One shoot can cover 3-6 videos (depending on formats)",
-    ownership: "Kaimakki",
+    handler: "kaimakki" as const,
+    note: "",
     scope: [
       "Travel to place",
       "Coordinate shoot as per pre-production",
@@ -38,13 +41,15 @@ const PRODUCTION_STAGES = [
   {
     title: "Editing",
     frequency: "Per video",
-    ownership: "Kaimakki",
+    handler: "kaimakki" as const,
+    note: "",
     scope: ["Editing"],
   },
   {
     title: "Account Management",
     frequency: "",
-    ownership: "Handled by agency",
+    handler: "agency" as const,
+    note: "",
     scope: [
       "Coordinate shoot dates",
       "Get auxiliary media (extra photos, old footage etc)",
@@ -129,9 +134,22 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
   return (
     <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
       <button className="accordion-header" onClick={toggle}>
+        {stage.handler === "kaimakki" ? (
+          <span className="handler-thumb handler-kaimakki">
+            <img src={logo} alt="Kaimakki" />
+          </span>
+        ) : (
+          <span className="handler-thumb handler-agency">A</span>
+        )}
         <div className="accordion-title-row">
           <span className="accordion-title">{stage.title}</span>
-          <span className="accordion-ownership">{stage.ownership}</span>
+          {stage.handler === "kaimakki" && (
+            <span className="accordion-handler-label">Kaimakki</span>
+          )}
+          {stage.handler === "agency" && (
+            <span className="accordion-handler-label accordion-handler-agency">Agency</span>
+          )}
+          {stage.note && <span className="accordion-note">{stage.note}</span>}
         </div>
         <span className="accordion-arrow">{open ? "−" : "+"}</span>
       </button>
