@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from "react";
 import "./styles.css";
 import logo from "./kaimakkilogo.png";
+import monogram from "./mongram.png";
 
 const PRODUCTION_STAGES = [
   {
@@ -137,13 +138,13 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
         {stage.handler === "both" ? (
           <span className="handler-thumbs">
             <span className="handler-thumb handler-kaimakki">
-              <img src={logo} alt="Kaimakki" />
+              <img src={monogram} alt="Kaimakki" />
             </span>
             <span className="handler-thumb handler-agency handler-thumb-overlap">A</span>
           </span>
         ) : stage.handler === "kaimakki" ? (
           <span className="handler-thumb handler-kaimakki">
-            <img src={logo} alt="Kaimakki" />
+            <img src={monogram} alt="Kaimakki" />
           </span>
         ) : (
           <span className="handler-thumb handler-agency">A</span>
