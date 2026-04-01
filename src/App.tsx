@@ -180,15 +180,16 @@ function calculateTotal(numVideos: number) {
 
 const MIN_VIDEOS = 4;
 const MAX_VIDEOS = 50;
-const MAX_PER_WEEK = 2;
+const MAX_PER_WEEK = 3;
 
 const MIN_POSTS = 1;
-const MAX_POSTS = 8; // per month
+const MAX_POSTS = 12; // per month
 
 function getFrequencyLabel(postsPerMonth: number): string {
   if (postsPerMonth <= 3) return `${postsPerMonth}× per month`;
   if (postsPerMonth === 4) return "1× per week";
   if (postsPerMonth === 8) return "2× per week";
+  if (postsPerMonth === 12) return "3× per week";
   return `${postsPerMonth}× per month`;
 }
 
@@ -350,7 +351,7 @@ export default function App() {
               </div>
               <div className="slider-hints">
                 <span>1×/mo</span>
-                <span>2×/wk</span>
+                <span>3×/wk</span>
               </div>
             </section>
 
