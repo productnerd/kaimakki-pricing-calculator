@@ -1,6 +1,59 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import "./styles.css";
 import logo from "./kaimakkilogo.png";
+
+const PRODUCTION_STAGES = [
+  {
+    title: "Social Media Strategy & Video Concept Ideation",
+    frequency: "Once per month",
+    ownership: "10% Discount if handled by agency",
+    scope: [
+      "Analyse performance from last month. Setup new 'experiments'",
+      "Research latest trends",
+      "Align with client on new products, campaigns, events, special dates (eg Easter) for coming month — adjust video strategy",
+      "Present three ideas per video for client to choose from",
+      "Prioritise list of videos, carousels and photos for next month",
+      "Understand brand, video & comms style of client",
+      "Run strategy call — 1-2h",
+    ],
+  },
+  {
+    title: "Pre-production",
+    frequency: "Per video (depends on format)",
+    ownership: "Kaimakki",
+    scope: [
+      "Prepare scripts — if relevant",
+      "Prepare shot-list — if relevant",
+    ],
+  },
+  {
+    title: "Filming",
+    frequency: "One shoot can cover 3-6 videos (depending on formats)",
+    ownership: "Kaimakki",
+    scope: [
+      "Travel to place",
+      "Coordinate shoot as per pre-production",
+    ],
+  },
+  {
+    title: "Editing",
+    frequency: "Per video",
+    ownership: "Kaimakki",
+    scope: ["Editing"],
+  },
+  {
+    title: "Account Management",
+    frequency: "",
+    ownership: "Handled by agency",
+    scope: [
+      "Coordinate shoot dates",
+      "Get auxiliary media (extra photos, old footage etc)",
+      "Get other information necessary during the editing phase",
+      "Get feedback and approval from client for preproduction",
+      "Get feedback and approval from client for final video",
+    ],
+  },
+];
 
 const AGENCY_TIERS = [
   { min: 1, max: 4, price: 165, normalPrice: 197 },
@@ -67,6 +120,37 @@ function getFrequencyLabel(postsPerMonth: number): string {
   if (postsPerMonth === 4) return "1× per week";
   if (postsPerMonth === 8) return "2× per week";
   return `${postsPerMonth}× per month`;
+}
+
+function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
+  const [open, setOpen] = useState(false);
+  const toggle = useCallback(() => setOpen((o) => !o), []);
+
+  return (
+    <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
+      <button className="accordion-header" onClick={toggle}>
+        <div className="accordion-title-row">
+          <span className="accordion-title">{stage.title}</span>
+          <span className="accordion-ownership">{stage.ownership}</span>
+        </div>
+        <span className="accordion-arrow">{open ? "−" : "+"}</span>
+      </button>
+      {open && (
+        <div className="accordion-body">
+          {stage.frequency && (
+            <div className="accordion-freq">
+              <strong>Frequency:</strong> {stage.frequency}
+            </div>
+          )}
+          <ul className="accordion-scope">
+            {stage.scope.map((item, i) => (
+              <li key={i}>{item}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function App() {
@@ -267,6 +351,16 @@ export default function App() {
                 </div>
               );
             })}
+          </div>
+        </section>
+
+        {/* FULL WIDTH — Production Stages */}
+        <section className="card card-full">
+          <h2 className="card-label">How It Works — Production Stages</h2>
+          <div className="accordion">
+            {PRODUCTION_STAGES.map((stage) => (
+              <AccordionItem key={stage.title} stage={stage} />
+            ))}
           </div>
         </section>
 

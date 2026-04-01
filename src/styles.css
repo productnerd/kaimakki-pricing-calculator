@@ -527,6 +527,100 @@ body {
   letter-spacing: 1px;
 }
 
+/* Accordion */
+.accordion {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accordion-item {
+  background: var(--surface);
+  border-radius: 10px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  transition: border-color 0.2s;
+}
+
+.accordion-open {
+  border-color: var(--card-border);
+}
+
+.accordion-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 16px 18px;
+  background: none;
+  border: none;
+  color: var(--text);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  gap: 12px;
+}
+
+.accordion-title-row {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+}
+
+.accordion-title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.accordion-ownership {
+  font-size: 11px;
+  color: var(--accent-pink);
+  font-weight: 500;
+}
+
+.accordion-arrow {
+  font-size: 20px;
+  color: var(--text-dim);
+  font-weight: 300;
+  min-width: 24px;
+  text-align: center;
+}
+
+.accordion-body {
+  padding: 0 18px 16px;
+}
+
+.accordion-freq {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin-bottom: 10px;
+}
+
+.accordion-scope {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.accordion-scope li {
+  font-size: 13px;
+  color: var(--text-dim);
+  padding-left: 16px;
+  position: relative;
+  line-height: 1.5;
+}
+
+.accordion-scope li::before {
+  content: "·";
+  position: absolute;
+  left: 4px;
+  color: var(--text-muted);
+  font-weight: 700;
+}
+
 /* Responsive */
 @media (max-width: 860px) {
   .two-col {
