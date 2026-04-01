@@ -605,6 +605,28 @@ body {
   background: linear-gradient(135deg, rgba(221, 240, 115, 0.06), rgba(139, 105, 20, 0.12));
 }
 
+.accordion-sm .accordion-header {
+  padding: 10px 14px;
+}
+
+.accordion-sm .accordion-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-dim);
+}
+
+.accordion-sm .accordion-arrow {
+  font-size: 16px;
+}
+
+.accordion-sm .accordion-body {
+  padding: 0 14px 12px;
+}
+
+.accordion-sm .accordion-scope li {
+  font-size: 12px;
+}
+
 .terms-section {
   margin-bottom: 16px;
 }

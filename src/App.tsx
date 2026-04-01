@@ -467,6 +467,7 @@ export default function App() {
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
           <h2 className="card-label">Agency Price Tiers</h2>
+          <p className="card-note">Discount compared to our standard pricing</p>
           <div className="tiers-grid tiers-grid-full">
             {AGENCY_TIERS.map((tier, idx) => {
               const isActive = numVideos >= tier.min;
@@ -486,7 +487,7 @@ export default function App() {
                   )}
                   <div className="tier-price">&euro;{tier.price}</div>
                   <div className="tier-unit">per video</div>
-                  <div className="tier-discount">~{discount}% off</div>
+                  {tier.normalPrice && <div className="tier-discount">~{discount}% off</div>}
                 </div>
               );
             })}
@@ -502,7 +503,7 @@ export default function App() {
             ))}
           </div>
 
-          <div className="accordion" style={{ marginTop: "24px" }}>
+          <div className="accordion accordion-sm" style={{ marginTop: "24px" }}>
             <TermsAccordion />
           </div>
         </section>
