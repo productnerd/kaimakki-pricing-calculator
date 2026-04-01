@@ -321,18 +321,18 @@ export default function App() {
         <section className="card card-full">
           <div className="stats-grid stats-grid-full">
             <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="m10 9 4-2v6l-4-2z"/><line x1="2" y1="20" x2="22" y2="20"/></svg>
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
               <div className="stat-number">{numVideos}</div>
               <div className="stat-label">Short-form Videos</div>
             </div>
             <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="m21 15-5-5L5 21"/></svg>
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
               <div className="stat-number">{numVideos}</div>
               <div className="stat-label">Branded Photos</div>
-              <div className="stat-bonus">included free</div>
+              <div className="stat-bonus">free</div>
             </div>
             <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a1 1 0 011 1v1h10V3a1 1 0 112 0v1h2a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h2V3a1 1 0 011-1zM3 10v10h18V10H3z"/></svg>
               <div className="stat-number">
                 {monthsOfContent >= 1
                   ? `${monthsOfContent.toFixed(1)}`
@@ -343,7 +343,7 @@ export default function App() {
               </div>
             </div>
             <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.4-1-1.2-1.5-2.5-1.5-1.7 0-2.5.9-2.5 2s.8 1.8 2.5 2c1.7.2 2.5 1 2.5 2s-.8 2-2.5 2c-1.3 0-2.1-.5-2.5-1.5"/><line x1="12" y1="6.5" x2="12" y2="8"/><line x1="12" y1="16" x2="12" y2="17.5"/></svg>
+              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15.93V17a1 1 0 10-2 0v.93A5.5 5.5 0 016.5 13H7a1 1 0 100-2h-.5A5.5 5.5 0 0111 6.07V7a1 1 0 102 0v-.93A5.5 5.5 0 0117.5 11H17a1 1 0 100 2h.5A5.5 5.5 0 0113 17.93z"/><path d="M12 9c-.83 0-1.5.67-1.5 1.5 0 .55.37 1.05.9 1.3l1.2.5c.53.25.9.75.9 1.3 0 .83-.67 1.4-1.5 1.4s-1.5-.57-1.5-1.4"/></svg>
               <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
               <div className="stat-label">Avg. per Video</div>
             </div>
