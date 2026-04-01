@@ -402,6 +402,36 @@ export default function App() {
           </div>
         </div>
 
+        {/* FULL WIDTH — Tier Reference */}
+        <section className="card card-full">
+          <h2 className="card-label">Agency Price Tiers</h2>
+          <p className="card-note">Discount compared to our standard pricing</p>
+          <div className="tiers-grid tiers-grid-full">
+            {AGENCY_TIERS.map((tier, idx) => {
+              const isActive = numVideos >= tier.min;
+              const discount = getTierDiscount(idx);
+              return (
+                <div
+                  key={tier.min}
+                  className={`tier-box ${isActive ? "tier-active" : ""}`}
+                >
+                  <div className="tier-range">
+                    {tier.min === 1 ? "1" : tier.min}-{tier.max} videos
+                  </div>
+                  {tier.normalPrice ? (
+                    <div className="tier-normal-price">&euro;{tier.normalPrice}</div>
+                  ) : (
+                    <div className="tier-na">not available</div>
+                  )}
+                  <div className="tier-price">&euro;{tier.price}</div>
+                  <div className="tier-unit">per video</div>
+                  {tier.normalPrice && <div className="tier-discount">~{discount}% off</div>}
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
         {/* FULL WIDTH — What You Get */}
         <section className="card card-full">
           <div className="stats-grid stats-grid-full">
@@ -461,36 +491,6 @@ export default function App() {
                 <p className="perk-desc">Included in all shoots if necessary</p>
               </div>
             </div>
-          </div>
-        </section>
-
-        {/* FULL WIDTH — Tier Reference */}
-        <section className="card card-full">
-          <h2 className="card-label">Agency Price Tiers</h2>
-          <p className="card-note">Discount compared to our standard pricing</p>
-          <div className="tiers-grid tiers-grid-full">
-            {AGENCY_TIERS.map((tier, idx) => {
-              const isActive = numVideos >= tier.min;
-              const discount = getTierDiscount(idx);
-              return (
-                <div
-                  key={tier.min}
-                  className={`tier-box ${isActive ? "tier-active" : ""}`}
-                >
-                  <div className="tier-range">
-                    {tier.min === 1 ? "1" : tier.min}-{tier.max} videos
-                  </div>
-                  {tier.normalPrice ? (
-                    <div className="tier-normal-price">&euro;{tier.normalPrice}</div>
-                  ) : (
-                    <div className="tier-na">not available</div>
-                  )}
-                  <div className="tier-price">&euro;{tier.price}</div>
-                  <div className="tier-unit">per video</div>
-                  {tier.normalPrice && <div className="tier-discount">~{discount}% off</div>}
-                </div>
-              );
-            })}
           </div>
         </section>
 
