@@ -593,15 +593,15 @@ body {
   border-color: var(--card-border);
 }
 
-.accordion-handler-kaimakki {
+.accordion-item.accordion-handler-kaimakki {
   background: rgba(221, 240, 115, 0.06);
 }
 
-.accordion-handler-agency {
+.accordion-item.accordion-handler-agency {
   background: rgba(139, 105, 20, 0.12);
 }
 
-.accordion-handler-both {
+.accordion-item.accordion-handler-both {
   background: linear-gradient(135deg, rgba(221, 240, 115, 0.06), rgba(139, 105, 20, 0.12));
 }
 
@@ -716,9 +716,9 @@ body {
   font-weight: 500;
 }
 
+.accordion-handler-label.accordion-handler-agency,
 .accordion-handler-label .accordion-handler-agency {
   color: #C4A035;
-  background: none;
 }
 
 .accordion-note {
