@@ -412,10 +412,16 @@ body {
 }
 
 .stat-bonus {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--accent-pink);
-  margin-top: 4px;
-  font-weight: 600;
+  margin-top: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  background: var(--accent-pink-dim);
+  padding: 4px 12px;
+  border-radius: 999px;
+  display: inline-block;
 }
 
 /* Delivery */
