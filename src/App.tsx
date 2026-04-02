@@ -70,7 +70,7 @@ const TERMS_SECTIONS = [
       "Prices do not include posting or setting up social media accounts. We can propose a content calendar but the marketing agency is to handle both.",
       "We do not handle community management (responding to comments and DMs).",
       "Prices are for a single client. Agency cannot purchase a pack of 20 videos and use it across 2+ clients. This is because there is a fixed cost per client for onboarding, strategy and comms as well as the shooting. It also keeps accounts more tidy.",
-      "Prices include video PLUS the same amount of photo posts. Each photo post is a complete, ready-to-publish post including caption concept, text and professional design — not just a raw photo.",
+      "Prices include video PLUS half the number of videos as free photo posts. Each photo post is a complete, ready-to-publish post including caption concept, text and professional design — not just a raw photo.",
       "Shoot time is proportional to the number of videos: 4 videos, 4 hours, +30 minutes for every extra video. So for example for 8 videos the max shoot time is 6 hours.",
       "For Limassol: Transport to and from the location beyond a single location is included in the shoot time. This means that if two shoots are needed and the total shoot time is 4 hours then we will subtract the transport time of the second shoot from the 4 hours.",
       "Outside Limassol: Given the extra hours on the road and fuel costs, this will incur an additional cost of €60 per shoot.",
@@ -314,12 +314,12 @@ export default function App() {
   const [numCarousels, setNumCarousels] = useState(0);
   const [showGif, setShowGif] = useState(false);
 
-  const freePhotos = numVideos; // photos equal to videos are free
+  const freePhotos = Math.ceil(numVideos / 2); // half of videos are free
 
-  // Lock photo slider minimum to video count
+  // Lock photo slider minimum to free photos (half of videos)
   useEffect(() => {
-    setNumPhotos((prev) => Math.max(prev, numVideos));
-  }, [numVideos]);
+    setNumPhotos((prev) => Math.max(prev, freePhotos));
+  }, [freePhotos]);
 
   const extraPhotos = Math.max(0, numPhotos - freePhotos);
   const { total: extraPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(extraPhotos, EXTRA_PHOTO_BASE);
@@ -384,7 +384,7 @@ export default function App() {
                   min={4}
                   max={100}
                   value={numPhotos}
-                  onChange={(e) => setNumPhotos(Math.max(Number(e.target.value), numVideos))}
+                  onChange={(e) => setNumPhotos(Math.max(Number(e.target.value), freePhotos))}
                   className="slider"
                 />
                 <div className="slider-value">{numPhotos}</div>
@@ -613,7 +613,6 @@ export default function App() {
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
           <h2 className="card-label">Agency Price Tiers</h2>
-          <p className="card-note">Discount compared to our standard pricing</p>
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
@@ -648,7 +647,7 @@ export default function App() {
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
             Extra Photo Posts
           </h3>
-          <p className="card-note">Photo posts equal to video count are included free. Each photo post is a complete post with caption, concept and design — not just a raw photo. Extra photo posts priced at &euro;{EXTRA_PHOTO_BASE}/post with volume discounts</p>
+          <p className="card-note">Half of video count in photo posts are included free. Each photo post is a complete post with caption, concept and design — not just a raw photo. Extra photo posts priced at &euro;{EXTRA_PHOTO_BASE}/post with volume discounts</p>
           <div className="tiers-grid tiers-grid-5">
             {[
               { label: "1–2", discount: 0, min: 1 },
