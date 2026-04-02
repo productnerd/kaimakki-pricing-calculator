@@ -707,7 +707,7 @@ export default function App() {
         <section className="cta-section">
           <h2 className="cta-title">Let's work together?</h2>
           <div className="cta-buttons">
-            <button className="cta-btn cta-btn-green" onClick={() => { triggerConfetti(); setShowGif(true); }}>Pameee!</button>
+            <button className="cta-btn cta-btn-green" onClick={() => { triggerConfetti(); setShowGif(true); }}>Παμεεεε!</button>
             <button className="cta-btn cta-btn-pink" onClick={() => { triggerConfetti(); setShowGif(true); }}>Let's Gooo!</button>
           </div>
         </section>
