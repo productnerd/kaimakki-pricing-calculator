@@ -440,23 +440,43 @@ export default function App() {
                 <span>3×/wk</span>
               </div>
 
-              <div className="stats-grid stats-grid-full">
+              <div className="stats-grid stats-grid-full" style={{ marginTop: "16px" }}>
                 <div className="stat-box">
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
                   <div className="stat-number">{numVideos}</div>
                   <div className="stat-label">Short-form Videos</div>
+                  <div className="avg-prices">
+                    <div className="avg-price-item">
+                      <span className="avg-price-label">Avg. per video</span>
+                      <span className="avg-price-value">&euro;{Math.round(avgPrice)}</span>
+                    </div>
+                  </div>
                 </div>
                 <div className="stat-box">
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
                   <div className="stat-number">{numPhotos}</div>
                   <div className="stat-label">Photo Posts</div>
                   {freePhotos > 0 && <div className="stat-bonus">{freePhotos} free</div>}
+                  {extraPhotos > 0 && (
+                    <div className="avg-prices">
+                      <div className="avg-price-item">
+                        <span className="avg-price-label">Avg. per photo</span>
+                        <span className="avg-price-value">&euro;{Math.round(extraPhotosTotal / extraPhotos)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
                 {numCarousels > 0 && (
                   <div className="stat-box">
                     <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
                     <div className="stat-number">{numCarousels}</div>
                     <div className="stat-label">Carousels</div>
+                    <div className="avg-prices">
+                      <div className="avg-price-item">
+                        <span className="avg-price-label">Avg. per carousel</span>
+                        <span className="avg-price-value">&euro;{Math.round(carouselsTotal / numCarousels)}</span>
+                      </div>
+                    </div>
                   </div>
                 )}
                 <div className="stat-box">
@@ -614,6 +634,11 @@ export default function App() {
         <section className="card card-full">
           <h2 className="card-label">Agency Price Tiers</h2>
           <p className="card-note">Discount compared to our standard pricing</p>
+
+          <h3 className="tier-row-label">
+            <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
+            Videos
+          </h3>
           <div className="tiers-grid tiers-grid-full">
             {AGENCY_TIERS.map((tier, idx) => {
               const isActive = numVideos >= tier.min;
@@ -637,6 +662,50 @@ export default function App() {
                 </div>
               );
             })}
+          </div>
+
+          <h3 className="tier-row-label">
+            <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
+            Extra Photos
+          </h3>
+          <p className="card-note">Photos equal to video count are included free. Extra photos priced at &euro;{EXTRA_PHOTO_BASE}/post with volume discounts</p>
+          <div className="tiers-grid tiers-grid-5">
+            {[
+              { label: "1–2", discount: 0 },
+              { label: "3–5", discount: 5 },
+              { label: "6–10", discount: 8 },
+              { label: "11–20", discount: 12 },
+              { label: "21+", discount: 15 },
+            ].map((t) => (
+              <div key={t.label} className={`tier-box ${extraPhotos > 0 && getExtrasDiscount(extraPhotos) === t.discount ? "tier-active" : ""}`}>
+                <div className="tier-range">{t.label} extra</div>
+                <div className="tier-price">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - t.discount / 100))}</div>
+                <div className="tier-unit">per photo</div>
+                {t.discount > 0 && <div className="tier-discount">-{t.discount}%</div>}
+              </div>
+            ))}
+          </div>
+
+          <h3 className="tier-row-label">
+            <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
+            Carousels
+          </h3>
+          <p className="card-note">Priced at &euro;{CAROUSEL_BASE}/carousel with volume discounts</p>
+          <div className="tiers-grid tiers-grid-5">
+            {[
+              { label: "1–2", discount: 0 },
+              { label: "3–5", discount: 5 },
+              { label: "6–10", discount: 8 },
+              { label: "11–20", discount: 12 },
+              { label: "21+", discount: 15 },
+            ].map((t) => (
+              <div key={t.label} className={`tier-box ${numCarousels > 0 && getExtrasDiscount(numCarousels) === t.discount ? "tier-active" : ""}`}>
+                <div className="tier-range">{t.label} carousels</div>
+                <div className="tier-price">&euro;{Math.round(CAROUSEL_BASE * (1 - t.discount / 100))}</div>
+                <div className="tier-unit">per carousel</div>
+                {t.discount > 0 && <div className="tier-discount">-{t.discount}%</div>}
+              </div>
+            ))}
           </div>
         </section>
 
@@ -665,7 +734,7 @@ export default function App() {
         </section>
 
         {showGif && (
-          <div className="gif-overlay" onClick={() => setShowGif(false)}>
+          <div className="gif-overlay" onClick={() => { setShowGif(false); stopConfetti(); }}>
             <img src={celebrationGif} alt="Let's go!" className="gif-image" onClick={(e) => e.stopPropagation()} />
             <a
               href={`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Let's do this!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`}
@@ -748,14 +817,28 @@ function triggerConfetti() {
     }, delay);
   }
 
-  // 9 waves, 250ms apart, no two at the same time
-  spawnTop(0);
-  spawnBottomLeft(250);
-  spawnBottomRight(500);
-  spawnTop(750);
-  spawnBottomRight(1000);
-  spawnBottomLeft(1250);
-  spawnTop(1500);
-  spawnBottomLeft(1750);
-  spawnBottomRight(2000);
+  function playSequence(offset: number) {
+    spawnTop(offset);
+    spawnBottomLeft(offset + 250);
+    spawnBottomRight(offset + 500);
+    spawnTop(offset + 750);
+    spawnBottomRight(offset + 1000);
+    spawnBottomLeft(offset + 1250);
+    spawnTop(offset + 1500);
+    spawnBottomLeft(offset + 1750);
+    spawnBottomRight(offset + 2000);
+  }
+
+  // Play first sequence immediately, then loop every 2.5s
+  playSequence(0);
+  const loopId = setInterval(() => playSequence(0), 2500);
+  // Store interval ID so it can be stopped
+  (window as any).__confettiLoop = loopId;
+}
+
+function stopConfetti() {
+  if ((window as any).__confettiLoop) {
+    clearInterval((window as any).__confettiLoop);
+    (window as any).__confettiLoop = null;
+  }
 }
