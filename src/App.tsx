@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useCallback } from "react";
 import "./styles.css";
 import logo from "./kaimakkilogo.png";
 import monogram from "./mongram.png";
@@ -309,15 +309,8 @@ export default function App() {
   const [numPhotos, setNumPhotos] = useState(4);
   const [numCarousels, setNumCarousels] = useState(0);
 
-  const freePhotos = Math.ceil(numVideos / 2); // 50% of videos, free
-
-  // Auto-move slider up as videos increase (gives impression of free photos growing)
-  useEffect(() => {
-    setNumPhotos((prev) => Math.max(prev, freePhotos));
-  }, [freePhotos]);
-
-  const effectivePhotos = Math.max(numPhotos, freePhotos); // never below free amount
-  const extraPhotos = Math.max(0, effectivePhotos - freePhotos);
+  const freePhotos = 4; // 4 photo posts always included free
+  const extraPhotos = Math.max(0, numPhotos - freePhotos);
   const { total: extraPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(extraPhotos, EXTRA_PHOTO_BASE);
   const { total: carouselsTotal, discountPct: carouselDiscountPct } = calculateExtrasTotal(numCarousels, CAROUSEL_BASE);
 
@@ -326,7 +319,7 @@ export default function App() {
   const total = baseTotal + extraPhotosTotal + carouselsTotal;
   const prepayment = total / 2;
 
-  const totalPosts = numVideos + effectivePhotos + numCarousels;
+  const totalPosts = numVideos + numPhotos + numCarousels;
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
   const weeksOfContent = perWeek > 0 ? totalPosts / perWeek : 0;
   const monthsOfContent = weeksOfContent / 4.33;
@@ -393,17 +386,17 @@ export default function App() {
             {/* Photo Posts */}
             <section className="card">
               <label className="card-label">Photo posts</label>
-              <p className="card-note">{freePhotos} included free (50% of videos){extraPhotos > 0 ? `. Extra at \u20AC${EXTRA_PHOTO_BASE}/post` : ""}{extraPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">{freePhotos} included free{extraPhotos > 0 ? `. Extra at \u20AC${EXTRA_PHOTO_BASE}/post` : ""}{extraPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
               <div className="slider-row">
                 <input
                   type="range"
                   min={freePhotos}
                   max={100}
-                  value={effectivePhotos}
-                  onChange={(e) => setNumPhotos(Math.max(Number(e.target.value), freePhotos))}
+                  value={numPhotos}
+                  onChange={(e) => setNumPhotos(Number(e.target.value))}
                   className="slider"
                 />
-                <div className="slider-value">{effectivePhotos}</div>
+                <div className="slider-value">{numPhotos}</div>
               </div>
               <div className="slider-hints">
                 <span>{freePhotos} (free)</span>
@@ -539,7 +532,7 @@ export default function App() {
             </div>
             <div className="stat-box">
               <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
-              <div className="stat-number">{effectivePhotos}</div>
+              <div className="stat-number">{numPhotos}</div>
               <div className="stat-label">Photo Posts</div>
               {freePhotos > 0 && <div className="stat-bonus">{freePhotos} free</div>}
             </div>
