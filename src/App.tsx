@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import "./styles.css";
 import logo from "./kaimakkilogo.png";
 import monogram from "./mongram.png";
@@ -65,6 +65,7 @@ const TERMS_SECTIONS = [
   {
     title: "Service",
     items: [
+      "Each video is a maximum of 45 seconds.",
       "Prices do not include posting or setting up social media accounts. We can propose a content calendar but the marketing agency is to handle both.",
       "We do not handle community management (responding to comments and DMs).",
       "Prices are for a single client. Agency cannot purchase a pack of 20 videos and use it across 2+ clients. This is because there is a fixed cost per client for onboarding, strategy and comms as well as the shooting. It also keeps accounts more tidy.",
@@ -126,8 +127,8 @@ const TERMS_SECTIONS = [
 ];
 
 const AGENCY_TIERS = [
-  { min: 1, max: 4, price: 165, normalPrice: 197 },
-  { min: 5, max: 8, price: 148, normalPrice: null },
+  { min: 1, max: 4, price: 170, normalPrice: 197 },
+  { min: 5, max: 8, price: 152, normalPrice: null },
   { min: 9, max: 15, price: 138, normalPrice: 156 },
   { min: 16, max: 25, price: 132, normalPrice: null },
   { min: 26, max: 36, price: 128, normalPrice: null },
@@ -176,6 +177,24 @@ function calculateTotal(numVideos: number) {
   }
 
   return { total, normalTotal, breakdown };
+}
+
+// Discount curve for extra photos and carousels (similar shape to video tiers)
+const EXTRA_PHOTO_BASE = 20;
+const CAROUSEL_BASE = 50;
+
+function getExtrasDiscount(count: number): number {
+  if (count <= 2) return 0;
+  if (count <= 5) return 5;
+  if (count <= 10) return 8;
+  if (count <= 20) return 12;
+  return 15;
+}
+
+function calculateExtrasTotal(count: number, basePrice: number): { total: number; discountPct: number } {
+  const discountPct = getExtrasDiscount(count);
+  const discountedPrice = basePrice * (1 - discountPct / 100);
+  return { total: Math.round(count * discountedPrice), discountPct };
 }
 
 const MIN_VIDEOS = 4;
@@ -287,18 +306,33 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
   const [postsPerMonth, setPostsPerMonth] = useState(4);
+  const [numPhotos, setNumPhotos] = useState(4);
+  const [numCarousels, setNumCarousels] = useState(0);
+
+  const freePhotos = Math.ceil(numVideos / 2); // 50% of videos, free
+
+  // Auto-move slider up as videos increase (gives impression of free photos growing)
+  useEffect(() => {
+    setNumPhotos((prev) => Math.max(prev, freePhotos));
+  }, [freePhotos]);
+
+  const effectivePhotos = Math.max(numPhotos, freePhotos); // never below free amount
+  const extraPhotos = Math.max(0, effectivePhotos - freePhotos);
+  const { total: extraPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(extraPhotos, EXTRA_PHOTO_BASE);
+  const { total: carouselsTotal, discountPct: carouselDiscountPct } = calculateExtrasTotal(numCarousels, CAROUSEL_BASE);
 
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
-  const total = baseTotal;
+  const total = baseTotal + extraPhotosTotal + carouselsTotal;
   const prepayment = total / 2;
 
+  const totalPosts = numVideos + effectivePhotos + numCarousels;
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
-  const weeksOfContent = perWeek > 0 ? numVideos / perWeek : 0;
+  const weeksOfContent = perWeek > 0 ? totalPosts / perWeek : 0;
   const monthsOfContent = weeksOfContent / 4.33;
 
-  const avgPrice = numVideos > 0 ? total / numVideos : 0;
-  const savings = normalTotal - total;
+  const avgPrice = numVideos > 0 ? baseTotal / numVideos : 0;
+  const savings = normalTotal - baseTotal;
   const discountPct = normalTotal > 0 ? Math.round((savings / normalTotal) * 100) : 0;
 
   return (
@@ -338,6 +372,7 @@ export default function App() {
             {/* Frequency */}
             <section className="card">
               <label className="card-label">How often will you post?</label>
+              <p className="card-note">Posts include videos, photos and carousels</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -352,6 +387,48 @@ export default function App() {
               <div className="slider-hints">
                 <span>1×/mo</span>
                 <span>3×/wk</span>
+              </div>
+            </section>
+
+            {/* Photo Posts */}
+            <section className="card">
+              <label className="card-label">Photo posts</label>
+              <p className="card-note">{freePhotos} included free (50% of videos){extraPhotos > 0 ? `. Extra at \u20AC${EXTRA_PHOTO_BASE}/post` : ""}{extraPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={freePhotos}
+                  max={100}
+                  value={effectivePhotos}
+                  onChange={(e) => setNumPhotos(Math.max(Number(e.target.value), freePhotos))}
+                  className="slider"
+                />
+                <div className="slider-value">{effectivePhotos}</div>
+              </div>
+              <div className="slider-hints">
+                <span>{freePhotos} (free)</span>
+                <span>100</span>
+              </div>
+            </section>
+
+            {/* Carousels */}
+            <section className="card">
+              <label className="card-label">Carousel posts</label>
+              <p className="card-note">&euro;{CAROUSEL_BASE}/carousel{numCarousels > 2 ? ` (${carouselDiscountPct}% volume discount)` : ""}</p>
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={0}
+                  max={numVideos}
+                  value={numCarousels}
+                  onChange={(e) => setNumCarousels(Number(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value">{numCarousels}</div>
+              </div>
+              <div className="slider-hints">
+                <span>0</span>
+                <span>{numVideos}</span>
               </div>
             </section>
 
@@ -381,6 +458,25 @@ export default function App() {
                   );
                 })}
               </div>
+
+              {extraPhotos > 0 && (
+                <div className="breakdown-row">
+                  <span className="breakdown-desc">
+                    {extraPhotos} extra photo{extraPhotos > 1 ? "s" : ""} &times; &euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}
+                    {photoDiscountPct > 0 && <span className="discount-badge">-{photoDiscountPct}%</span>}
+                  </span>
+                  <span className="breakdown-amount">&euro;{extraPhotosTotal.toLocaleString()}</span>
+                </div>
+              )}
+              {numCarousels > 0 && (
+                <div className="breakdown-row">
+                  <span className="breakdown-desc">
+                    {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; &euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}
+                    {carouselDiscountPct > 0 && <span className="discount-badge">-{carouselDiscountPct}%</span>}
+                  </span>
+                  <span className="breakdown-amount">&euro;{carouselsTotal.toLocaleString()}</span>
+                </div>
+              )}
 
               <div className="totals">
                 <div className="total-row">
@@ -417,7 +513,7 @@ export default function App() {
                   className={`tier-box ${isActive ? "tier-active" : ""}`}
                 >
                   <div className="tier-range">
-                    {tier.min === 1 ? "1" : tier.min}-{tier.max} videos
+                    {tier.min <= 1 ? tier.max : tier.min === tier.max ? tier.min : `${tier.min}-${tier.max}`} videos
                   </div>
                   {tier.normalPrice ? (
                     <div className="tier-normal-price">&euro;{tier.normalPrice}</div>
@@ -443,10 +539,17 @@ export default function App() {
             </div>
             <div className="stat-box">
               <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
-              <div className="stat-number">{numVideos}</div>
-              <div className="stat-label">Branded Photos</div>
-              <div className="stat-bonus">free</div>
+              <div className="stat-number">{effectivePhotos}</div>
+              <div className="stat-label">Photo Posts</div>
+              {freePhotos > 0 && <div className="stat-bonus">{freePhotos} free</div>}
             </div>
+            {numCarousels > 0 && (
+              <div className="stat-box">
+                <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
+                <div className="stat-number">{numCarousels}</div>
+                <div className="stat-label">Carousels</div>
+              </div>
+            )}
             <div className="stat-box">
               <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a1 1 0 011 1v1h10V3a1 1 0 112 0v1h2a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h2V3a1 1 0 011-1zM3 10v10h18V10H3z"/></svg>
               <div className="stat-number">
@@ -465,24 +568,27 @@ export default function App() {
             </div>
           </div>
 
-          <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks for Agencies</h2>
+          <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks</h2>
           <div className="perks-grid">
+            <div className="perk-item">
+              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              <div>
+                <strong className="perk-title">Two Rounds of Iteration</strong>
+                <p className="perk-desc">Two iterations allowed for both pre-production and post-production (one from agency, one from client)</p>
+              </div>
+            </div>
             <div className="perk-item">
               <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
               <div>
-                <strong className="perk-title">Faster Postproduction</strong>
+                <strong className="perk-title">Faster Delivery</strong>
                 <p className="perk-desc">3-day post-shoot delivery (standard is 4–5) for first video</p>
               </div>
             </div>
             <div className="perk-item">
               <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7v4.28l-1.66 3.32A1 1 0 004.23 18h15.54a1 1 0 00.89-1.4L19 13.28V9a7 7 0 00-7-7zm-2 18a2 2 0 004 0h-4z"/></svg>
               <div>
-                <strong className="perk-title">Emergency Productions</strong>
-                <p className="perk-desc">
-                  {numVideos <= 2
-                    ? "1 video can have urgent delivery with 24h post-shoot turnaround"
-                    : `${Math.floor(numVideos * 0.25)} of your ${numVideos} videos can have urgent delivery with 24h post-shoot turnaround`}
-                </p>
+                <strong className="perk-title">Urgent Delivery</strong>
+                <p className="perk-desc">Upon request, we can do urgent delivery with 24h post-shoot turnaround</p>
               </div>
             </div>
             <div className="perk-item">
@@ -509,10 +615,78 @@ export default function App() {
           </div>
         </section>
 
-        <footer className="footer">
+        {/* CTA Section */}
+        <section className="cta-section">
+          <h2 className="cta-title">Let's work together?</h2>
+          <div className="cta-buttons">
+            <button className="cta-btn cta-btn-green" onClick={() => { triggerConfetti(); setTimeout(() => window.open(`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Pameee!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`, "_self"), 1500); }}>Pameee!</button>
+            <button className="cta-btn cta-btn-pink" onClick={() => { triggerConfetti(); setTimeout(() => window.open(`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Let's Gooo!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`, "_self"), 1500); }}>Let's Gooo!</button>
+          </div>
+        </section>
+
+        <footer className="footer-minimal">
           <p>made with meraki by kaimakki 🤍</p>
         </footer>
       </main>
+      <div id="confetti-container" />
     </div>
   );
+}
+
+function triggerConfetti() {
+  const container = document.getElementById("confetti-container");
+  if (!container) return;
+  container.innerHTML = "";
+
+  const colors = ["#DDF073", "#FFB0F1", "#FFF8E6", "#8B6914", "#C4A035"];
+  const shapes = ["circle", "square", "strip"];
+
+  function createParticle(x: number, y: number, vx: number, vy: number, delay: number) {
+    const el = document.createElement("div");
+    const color = colors[Math.floor(Math.random() * colors.length)];
+    const shape = shapes[Math.floor(Math.random() * shapes.length)];
+    const size = 4 + Math.random() * 8;
+    const rotation = Math.random() * 360;
+    const duration = 1.5 + Math.random() * 2;
+
+    el.style.cssText = `
+      position: fixed; left: ${x}px; top: ${y}px; z-index: 9999; pointer-events: none;
+      width: ${shape === "strip" ? size * 0.3 : size}px;
+      height: ${shape === "strip" ? size * 2 : size}px;
+      background: ${color};
+      border-radius: ${shape === "circle" ? "50%" : shape === "strip" ? "2px" : "1px"};
+      transform: rotate(${rotation}deg);
+      animation: confetti-fly ${duration}s ease-out ${delay}s forwards;
+      --vx: ${vx}px; --vy: ${vy}px;
+      opacity: 1;
+    `;
+    container!.appendChild(el);
+    setTimeout(() => el.remove(), (duration + delay) * 1000 + 100);
+  }
+
+  // Wave 1: Falling from top
+  for (let i = 0; i < 60; i++) {
+    const x = Math.random() * window.innerWidth;
+    const vx = (Math.random() - 0.5) * 200;
+    const vy = 300 + Math.random() * 400;
+    createParticle(x, -20, vx, vy, Math.random() * 0.3);
+  }
+
+  // Wave 2: Explosion from bottom-left
+  setTimeout(() => {
+    for (let i = 0; i < 50; i++) {
+      const angle = -Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
+      const speed = 200 + Math.random() * 400;
+      createParticle(50, window.innerHeight - 50, Math.cos(angle) * speed, -Math.sin(angle) * speed, Math.random() * 0.2);
+    }
+  }, 400);
+
+  // Wave 3: Explosion from bottom-right
+  setTimeout(() => {
+    for (let i = 0; i < 50; i++) {
+      const angle = Math.PI / 4 + Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2;
+      const speed = 200 + Math.random() * 400;
+      createParticle(window.innerWidth - 50, window.innerHeight - 50, Math.cos(angle) * speed, -Math.sin(angle) * speed, Math.random() * 0.2);
+    }
+  }, 800);
 }
