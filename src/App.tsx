@@ -398,7 +398,7 @@ export default function App() {
             {/* Carousels */}
             <section className="card">
               <label className="card-label">Carousel posts</label>
-              <p className="card-note">&euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}/carousel{numCarousels > 2 ? ` (${carouselDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">&euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}/carousel · up to 6 slides{numCarousels > 2 ? ` (${carouselDiscountPct}% volume discount)` : ""}</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -670,7 +670,7 @@ export default function App() {
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
             Carousels
           </h3>
-          <p className="card-note">Priced at &euro;{CAROUSEL_BASE}/carousel with volume discounts</p>
+          <p className="card-note">Priced at &euro;{CAROUSEL_BASE}/carousel (up to 6 slides each) with volume discounts</p>
           <div className="tiers-grid tiers-grid-5">
             {[
               { label: "1–2", discount: 0, min: 1 },
