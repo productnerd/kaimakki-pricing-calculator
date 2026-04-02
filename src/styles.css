@@ -286,11 +286,48 @@ body {
 }
 
 /* Breakdown */
+.breakdown-section {
+  padding-bottom: 16px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--card-border);
+}
+
+.breakdown-section:last-of-type {
+  margin-bottom: 0;
+}
+
+.breakdown-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.breakdown-section-icon {
+  width: 18px;
+  height: 18px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.breakdown-section-title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+}
+
 .breakdown-list {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-bottom: 20px;
+}
+
+.avg-price-row {
+  padding-bottom: 12px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--card-border);
 }
 
 .breakdown-row {
@@ -334,6 +371,39 @@ body {
 .strategy-amount {
   color: var(--accent-pink);
   font-weight: 700;
+}
+
+/* Avg Prices */
+.avg-prices {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(221, 240, 115, 0.06);
+  border-radius: 10px;
+  border: 1px dashed rgba(221, 240, 115, 0.15);
+}
+
+.avg-price-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  gap: 2px;
+}
+
+.avg-price-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.avg-price-value {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--accent-green);
 }
 
 /* Totals */
@@ -532,6 +602,55 @@ body {
   color: var(--text-muted);
   opacity: 0.4;
   line-height: 1.8;
+}
+
+/* Gif Overlay */
+.gif-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  background: rgba(0, 0, 0, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  animation: fade-in 0.3s ease;
+}
+
+.gif-image {
+  max-width: min(500px, 85vw);
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  cursor: default;
+}
+
+.gif-cta-link {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--bg);
+  background: var(--accent-green);
+  padding: 12px 32px;
+  border-radius: 12px;
+  text-decoration: none;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 0 #a8b84a, 0 8px 20px rgba(0,0,0,0.3);
+  transition: all 0.1s ease;
+  cursor: pointer;
+}
+
+.gif-cta-link:hover {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 #a8b84a, inset 0 2px 4px rgba(0,0,0,0.2);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 /* CTA Section */

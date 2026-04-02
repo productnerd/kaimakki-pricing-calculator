@@ -1,7 +1,8 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import "./styles.css";
 import logo from "./kaimakkilogo.png";
 import monogram from "./mongram.png";
+import celebrationGif from "./giphy-19.gif";
 
 const PRODUCTION_STAGES = [
   {
@@ -106,10 +107,13 @@ const TERMS_SECTIONS = [
     ],
   },
   {
-    title: "Refund Policy",
+    title: "Payment Terms",
     items: [
-      "50% payment upfront. Non-refundable unless Kaimakki cancels.",
-      "50% at the end of the collaboration.",
+      "50% prepayment upfront. Non-refundable unless Kaimakki cancels.",
+      "50% upon delivery of all videos.",
+      "Shoots outside Limassol incur an additional €60 per shoot for travel and fuel costs.",
+      "Videos longer than 45 seconds are subject to an additional charge depending on length and complexity.",
+      "Additional aspect ratios (e.g. 16:9 horizontal, 1:1 square) beyond the default 9:16 vertical are charged extra per video.",
     ],
   },
   {
@@ -220,7 +224,7 @@ function TermsAccordion() {
     <div className={`accordion-item ${open ? "accordion-open" : ""}`}>
       <button className="accordion-header" onClick={toggle}>
         <div className="accordion-title-row">
-          <span className="accordion-title">Terms & Conditions</span>
+          <span className="accordion-title">Collaboration Terms</span>
         </div>
         <span className="accordion-arrow">{open ? "−" : "+"}</span>
       </button>
@@ -308,8 +312,15 @@ export default function App() {
   const [postsPerMonth, setPostsPerMonth] = useState(4);
   const [numPhotos, setNumPhotos] = useState(4);
   const [numCarousels, setNumCarousels] = useState(0);
+  const [showGif, setShowGif] = useState(false);
 
-  const freePhotos = 4; // 4 photo posts always included free
+  const freePhotos = numVideos; // photos equal to videos are free
+
+  // Lock photo slider minimum to video count
+  useEffect(() => {
+    setNumPhotos((prev) => Math.max(prev, numVideos));
+  }, [numVideos]);
+
   const extraPhotos = Math.max(0, numPhotos - freePhotos);
   const { total: extraPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(extraPhotos, EXTRA_PHOTO_BASE);
   const { total: carouselsTotal, discountPct: carouselDiscountPct } = calculateExtrasTotal(numCarousels, CAROUSEL_BASE);
@@ -362,44 +373,24 @@ export default function App() {
               </div>
             </section>
 
-            {/* Frequency */}
-            <section className="card">
-              <label className="card-label">How often will you post?</label>
-              <p className="card-note">Posts include videos, photos and carousels</p>
-              <div className="slider-row">
-                <input
-                  type="range"
-                  min={MIN_POSTS}
-                  max={MAX_POSTS}
-                  value={postsPerMonth}
-                  onChange={(e) => setPostsPerMonth(Number(e.target.value))}
-                  className="slider"
-                />
-                <div className="slider-value slider-value-sm">{getFrequencyLabel(postsPerMonth)}</div>
-              </div>
-              <div className="slider-hints">
-                <span>1×/mo</span>
-                <span>3×/wk</span>
-              </div>
-            </section>
 
             {/* Photo Posts */}
             <section className="card">
               <label className="card-label">Photo posts</label>
-              <p className="card-note">{freePhotos} included free{extraPhotos > 0 ? `. Extra at \u20AC${EXTRA_PHOTO_BASE}/post` : ""}{extraPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">{freePhotos} included free{extraPhotos > 0 ? `. Extra at \u20AC${Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post` : ""}{extraPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
               <div className="slider-row">
                 <input
                   type="range"
-                  min={freePhotos}
+                  min={4}
                   max={100}
                   value={numPhotos}
-                  onChange={(e) => setNumPhotos(Number(e.target.value))}
+                  onChange={(e) => setNumPhotos(Math.max(Number(e.target.value), numVideos))}
                   className="slider"
                 />
                 <div className="slider-value">{numPhotos}</div>
               </div>
               <div className="slider-hints">
-                <span>{freePhotos} (free)</span>
+                <span>4</span>
                 <span>100</span>
               </div>
             </section>
@@ -407,7 +398,7 @@ export default function App() {
             {/* Carousels */}
             <section className="card">
               <label className="card-label">Carousel posts</label>
-              <p className="card-note">&euro;{CAROUSEL_BASE}/carousel{numCarousels > 2 ? ` (${carouselDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">&euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}/carousel{numCarousels > 2 ? ` (${carouselDiscountPct}% volume discount)` : ""}</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -429,56 +420,151 @@ export default function App() {
 
           {/* RIGHT COLUMN — Results */}
           <div className="col-right">
+            {/* Frequency + Stats */}
+            <section className="card">
+              <label className="card-label">How often will you post?</label>
+              <p className="card-note">Posts include videos, photos and carousels</p>
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={MIN_POSTS}
+                  max={MAX_POSTS}
+                  value={postsPerMonth}
+                  onChange={(e) => setPostsPerMonth(Number(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value slider-value-sm">{getFrequencyLabel(postsPerMonth)}</div>
+              </div>
+              <div className="slider-hints">
+                <span>1×/mo</span>
+                <span>3×/wk</span>
+              </div>
+
+              <div className="stats-grid stats-grid-full">
+                <div className="stat-box">
+                  <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
+                  <div className="stat-number">{numVideos}</div>
+                  <div className="stat-label">Short-form Videos</div>
+                </div>
+                <div className="stat-box">
+                  <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
+                  <div className="stat-number">{numPhotos}</div>
+                  <div className="stat-label">Photo Posts</div>
+                  {freePhotos > 0 && <div className="stat-bonus">{freePhotos} free</div>}
+                </div>
+                {numCarousels > 0 && (
+                  <div className="stat-box">
+                    <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
+                    <div className="stat-number">{numCarousels}</div>
+                    <div className="stat-label">Carousels</div>
+                  </div>
+                )}
+                <div className="stat-box">
+                  <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a1 1 0 011 1v1h10V3a1 1 0 112 0v1h2a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h2V3a1 1 0 011-1zM3 10v10h18V10H3z"/></svg>
+                  <div className="stat-number">
+                    {monthsOfContent >= 1
+                      ? `${monthsOfContent.toFixed(1)}`
+                      : `${Math.round(weeksOfContent)}`}
+                  </div>
+                  <div className="stat-label">
+                    {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
+                  </div>
+                </div>
+              </div>
+            </section>
+
             {/* Price Breakdown */}
             <section className="card">
               <h2 className="card-label">Price Breakdown</h2>
               <p className="card-note">Pricing is progressive — each tier applies only to videos in that range</p>
-              <div className="breakdown-list">
-                {breakdown.map((tier, i) => {
-                  const discount = getTierDiscount(tier.tierIndex);
-                  return (
-                    <div key={i} className="breakdown-row">
-                      <span className="breakdown-desc">
-                        {tier.count} video{tier.count > 1 ? "s" : ""} &times;{" "}
-                        {tier.normalPrice && (
-                          <><span className="price-normal">&euro;{tier.normalPrice}</span>{" "}</>
-                        )}
-                        &euro;{tier.price}
-                        <span className="discount-badge">-{discount}%</span>
-                      </span>
-                      <span className="breakdown-amount">&euro;{(tier.count * tier.price).toLocaleString()}</span>
-                    </div>
-                  );
-                })}
+
+              {/* Videos section */}
+              <div className="breakdown-section">
+                <div className="breakdown-section-header">
+                  <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
+                  <span className="breakdown-section-title">Videos</span>
+                </div>
+                <div className="breakdown-list">
+                  {breakdown.map((tier, i) => {
+                    const discount = getTierDiscount(tier.tierIndex);
+                    return (
+                      <div key={i} className="breakdown-row">
+                        <span className="breakdown-desc">
+                          {tier.count} video{tier.count > 1 ? "s" : ""} &times;{" "}
+                          {tier.normalPrice && (
+                            <><span className="price-normal">&euro;{tier.normalPrice}</span>{" "}</>
+                          )}
+                          &euro;{tier.price}
+                          <span className="discount-badge">-{discount}%</span>
+                        </span>
+                        <span className="breakdown-amount">&euro;{(tier.count * tier.price).toLocaleString()}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
 
+              {/* Photos section */}
               {extraPhotos > 0 && (
-                <div className="breakdown-row">
-                  <span className="breakdown-desc">
-                    {extraPhotos} extra photo{extraPhotos > 1 ? "s" : ""} &times; &euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}
-                    {photoDiscountPct > 0 && <span className="discount-badge">-{photoDiscountPct}%</span>}
-                  </span>
-                  <span className="breakdown-amount">&euro;{extraPhotosTotal.toLocaleString()}</span>
+                <div className="breakdown-section">
+                  <div className="breakdown-section-header">
+                    <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
+                    <span className="breakdown-section-title">Extra Photos</span>
+                  </div>
+                  <div className="breakdown-list">
+                    <div className="breakdown-row">
+                      <span className="breakdown-desc">
+                        {extraPhotos} extra photo{extraPhotos > 1 ? "s" : ""} &times; &euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}
+                        {photoDiscountPct > 0 && <span className="discount-badge">-{photoDiscountPct}%</span>}
+                      </span>
+                      <span className="breakdown-amount">&euro;{extraPhotosTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              {/* Carousels section */}
               {numCarousels > 0 && (
-                <div className="breakdown-row">
-                  <span className="breakdown-desc">
-                    {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; &euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}
-                    {carouselDiscountPct > 0 && <span className="discount-badge">-{carouselDiscountPct}%</span>}
-                  </span>
-                  <span className="breakdown-amount">&euro;{carouselsTotal.toLocaleString()}</span>
+                <div className="breakdown-section">
+                  <div className="breakdown-section-header">
+                    <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
+                    <span className="breakdown-section-title">Carousels</span>
+                  </div>
+                  <div className="breakdown-list">
+                    <div className="breakdown-row">
+                      <span className="breakdown-desc">
+                        {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; &euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}
+                        {carouselDiscountPct > 0 && <span className="discount-badge">-{carouselDiscountPct}%</span>}
+                      </span>
+                      <span className="breakdown-amount">&euro;{carouselsTotal.toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
               )}
+
+              <div className="avg-prices">
+                <div className="avg-price-item">
+                  <span className="avg-price-label">Avg. per video</span>
+                  <span className="avg-price-value">&euro;{Math.round(avgPrice)}</span>
+                </div>
+                {extraPhotos > 0 && (
+                  <div className="avg-price-item">
+                    <span className="avg-price-label">Avg. per photo</span>
+                    <span className="avg-price-value">&euro;{Math.round(extraPhotosTotal / extraPhotos)}</span>
+                  </div>
+                )}
+                {numCarousels > 0 && (
+                  <div className="avg-price-item">
+                    <span className="avg-price-label">Avg. per carousel</span>
+                    <span className="avg-price-value">&euro;{Math.round(carouselsTotal / numCarousels)}</span>
+                  </div>
+                )}
+              </div>
 
               <div className="totals">
                 <div className="total-row">
                   <span>Total Investment</span>
                   <span className="total-amount">&euro;{total.toLocaleString()}</span>
-                </div>
-                <div className="total-row prepay-row">
-                  <span>Prepayment (50% upfront)</span>
-                  <span className="prepay-amount">&euro;{prepayment.toLocaleString()}</span>
                 </div>
                 {savings > 0 && (
                   <div className="savings-row">
@@ -486,6 +572,38 @@ export default function App() {
                     <span>&euro;{savings.toLocaleString()} saved ({discountPct}% off normal pricing)</span>
                   </div>
                 )}
+              </div>
+
+              <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks</h2>
+              <div className="perks-grid">
+                <div className="perk-item">
+                  <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+                  <div>
+                    <strong className="perk-title">Two Rounds of Iteration</strong>
+                    <p className="perk-desc">Two iterations allowed for both pre-production and post-production (one from agency, one from client)</p>
+                  </div>
+                </div>
+                <div className="perk-item">
+                  <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  <div>
+                    <strong className="perk-title">Faster Delivery</strong>
+                    <p className="perk-desc">3-day post-shoot delivery (standard is 4–5) for first video</p>
+                  </div>
+                </div>
+                <div className="perk-item">
+                  <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7v4.28l-1.66 3.32A1 1 0 004.23 18h15.54a1 1 0 00.89-1.4L19 13.28V9a7 7 0 00-7-7zm-2 18a2 2 0 004 0h-4z"/></svg>
+                  <div>
+                    <strong className="perk-title">Urgent Delivery</strong>
+                    <p className="perk-desc">Upon request, we can do urgent delivery with 24h post-shoot turnaround</p>
+                  </div>
+                </div>
+                <div className="perk-item">
+                  <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.69 2 8v8c0 3.31 4.48 6 10 6s10-2.69 10-6V8c0-3.31-4.48-6-10-6zm0 2c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4zM6.5 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/><path d="M15 12l4 2.5V9.5L15 12z"/></svg>
+                  <div>
+                    <strong className="perk-title">Drone Shots</strong>
+                    <p className="perk-desc">Included in all shoots if necessary</p>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -522,77 +640,6 @@ export default function App() {
           </div>
         </section>
 
-        {/* FULL WIDTH — What You Get */}
-        <section className="card card-full">
-          <div className="stats-grid stats-grid-full">
-            <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
-              <div className="stat-number">{numVideos}</div>
-              <div className="stat-label">Short-form Videos</div>
-            </div>
-            <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
-              <div className="stat-number">{numPhotos}</div>
-              <div className="stat-label">Photo Posts</div>
-              {freePhotos > 0 && <div className="stat-bonus">{freePhotos} free</div>}
-            </div>
-            {numCarousels > 0 && (
-              <div className="stat-box">
-                <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
-                <div className="stat-number">{numCarousels}</div>
-                <div className="stat-label">Carousels</div>
-              </div>
-            )}
-            <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a1 1 0 011 1v1h10V3a1 1 0 112 0v1h2a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h2V3a1 1 0 011-1zM3 10v10h18V10H3z"/></svg>
-              <div className="stat-number">
-                {monthsOfContent >= 1
-                  ? `${monthsOfContent.toFixed(1)}`
-                  : `${Math.round(weeksOfContent)}`}
-              </div>
-              <div className="stat-label">
-                {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
-              </div>
-            </div>
-            <div className="stat-box">
-              <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 15.93V17a1 1 0 10-2 0v.93A5.5 5.5 0 016.5 13H7a1 1 0 100-2h-.5A5.5 5.5 0 0111 6.07V7a1 1 0 102 0v-.93A5.5 5.5 0 0117.5 11H17a1 1 0 100 2h.5A5.5 5.5 0 0113 17.93z"/><path d="M12 9c-.83 0-1.5.67-1.5 1.5 0 .55.37 1.05.9 1.3l1.2.5c.53.25.9.75.9 1.3 0 .83-.67 1.4-1.5 1.4s-1.5-.57-1.5-1.4"/></svg>
-              <div className="stat-number">&euro;{Math.round(avgPrice)}</div>
-              <div className="stat-label">Avg. per Video</div>
-            </div>
-          </div>
-
-          <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks</h2>
-          <div className="perks-grid">
-            <div className="perk-item">
-              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35A7.96 7.96 0 0012 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0112 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
-              <div>
-                <strong className="perk-title">Two Rounds of Iteration</strong>
-                <p className="perk-desc">Two iterations allowed for both pre-production and post-production (one from agency, one from client)</p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
-              <div>
-                <strong className="perk-title">Faster Delivery</strong>
-                <p className="perk-desc">3-day post-shoot delivery (standard is 4–5) for first video</p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7v4.28l-1.66 3.32A1 1 0 004.23 18h15.54a1 1 0 00.89-1.4L19 13.28V9a7 7 0 00-7-7zm-2 18a2 2 0 004 0h-4z"/></svg>
-              <div>
-                <strong className="perk-title">Urgent Delivery</strong>
-                <p className="perk-desc">Upon request, we can do urgent delivery with 24h post-shoot turnaround</p>
-              </div>
-            </div>
-            <div className="perk-item">
-              <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 4.69 2 8v8c0 3.31 4.48 6 10 6s10-2.69 10-6V8c0-3.31-4.48-6-10-6zm0 2c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4zM6.5 9.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/><path d="M15 12l4 2.5V9.5L15 12z"/></svg>
-              <div>
-                <strong className="perk-title">Drone Shots</strong>
-                <p className="perk-desc">Included in all shoots if necessary</p>
-              </div>
-            </div>
-          </div>
-        </section>
 
         {/* FULL WIDTH — Production Stages */}
         <section className="card card-full">
@@ -612,10 +659,23 @@ export default function App() {
         <section className="cta-section">
           <h2 className="cta-title">Let's work together?</h2>
           <div className="cta-buttons">
-            <button className="cta-btn cta-btn-green" onClick={() => { triggerConfetti(); setTimeout(() => window.open(`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Pameee!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`, "_self"), 1500); }}>Pameee!</button>
-            <button className="cta-btn cta-btn-pink" onClick={() => { triggerConfetti(); setTimeout(() => window.open(`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Let's Gooo!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`, "_self"), 1500); }}>Let's Gooo!</button>
+            <button className="cta-btn cta-btn-green" onClick={() => { triggerConfetti(); setShowGif(true); }}>Pameee!</button>
+            <button className="cta-btn cta-btn-pink" onClick={() => { triggerConfetti(); setShowGif(true); }}>Let's Gooo!</button>
           </div>
         </section>
+
+        {showGif && (
+          <div className="gif-overlay" onClick={() => setShowGif(false)}>
+            <img src={celebrationGif} alt="Let's go!" className="gif-image" onClick={(e) => e.stopPropagation()} />
+            <a
+              href={`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Let's do this!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`}
+              className="gif-cta-link"
+              onClick={(e) => e.stopPropagation()}
+            >
+              Email us &rarr;
+            </a>
+          </div>
+        )}
 
         <footer className="footer-minimal">
           <p>made with meraki by kaimakki 🤍</p>
@@ -631,7 +691,7 @@ function triggerConfetti() {
   if (!container) return;
   container.innerHTML = "";
 
-  const colors = ["#DDF073", "#FFB0F1", "#FFF8E6", "#8B6914", "#C4A035"];
+  const colors = ["#DDF073", "#FFB0F1"];
   const shapes = ["circle", "square", "strip"];
 
   function createParticle(x: number, y: number, vx: number, vy: number, delay: number) {
@@ -657,29 +717,45 @@ function triggerConfetti() {
     setTimeout(() => el.remove(), (duration + delay) * 1000 + 100);
   }
 
-  // Wave 1: Falling from top
-  for (let i = 0; i < 60; i++) {
-    const x = Math.random() * window.innerWidth;
-    const vx = (Math.random() - 0.5) * 200;
-    const vy = 300 + Math.random() * 400;
-    createParticle(x, -20, vx, vy, Math.random() * 0.3);
+  function spawnTop(delay: number) {
+    setTimeout(() => {
+      for (let i = 0; i < 60; i++) {
+        const x = Math.random() * window.innerWidth;
+        const vx = (Math.random() - 0.5) * 200;
+        const vy = 300 + Math.random() * 400;
+        createParticle(x, -20, vx, vy, Math.random() * 0.3);
+      }
+    }, delay);
   }
 
-  // Wave 2: Explosion from bottom-left
-  setTimeout(() => {
-    for (let i = 0; i < 50; i++) {
-      const angle = -Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
-      const speed = 200 + Math.random() * 400;
-      createParticle(50, window.innerHeight - 50, Math.cos(angle) * speed, -Math.sin(angle) * speed, Math.random() * 0.2);
-    }
-  }, 400);
+  function spawnBottomLeft(delay: number) {
+    setTimeout(() => {
+      for (let i = 0; i < 50; i++) {
+        const angle = -Math.PI / 4 + (Math.random() - 0.5) * Math.PI / 2;
+        const speed = 200 + Math.random() * 400;
+        createParticle(50, window.innerHeight - 50, Math.cos(angle) * speed, -Math.sin(angle) * speed, Math.random() * 0.2);
+      }
+    }, delay);
+  }
 
-  // Wave 3: Explosion from bottom-right
-  setTimeout(() => {
-    for (let i = 0; i < 50; i++) {
-      const angle = Math.PI / 4 + Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2;
-      const speed = 200 + Math.random() * 400;
-      createParticle(window.innerWidth - 50, window.innerHeight - 50, Math.cos(angle) * speed, -Math.sin(angle) * speed, Math.random() * 0.2);
-    }
-  }, 800);
+  function spawnBottomRight(delay: number) {
+    setTimeout(() => {
+      for (let i = 0; i < 50; i++) {
+        const angle = Math.PI / 4 + Math.PI / 2 + (Math.random() - 0.5) * Math.PI / 2;
+        const speed = 200 + Math.random() * 400;
+        createParticle(window.innerWidth - 50, window.innerHeight - 50, Math.cos(angle) * speed, -Math.sin(angle) * speed, Math.random() * 0.2);
+      }
+    }, delay);
+  }
+
+  // 9 waves, 250ms apart, no two at the same time
+  spawnTop(0);
+  spawnBottomLeft(250);
+  spawnBottomRight(500);
+  spawnTop(750);
+  spawnBottomRight(1000);
+  spawnBottomLeft(1250);
+  spawnTop(1500);
+  spawnBottomLeft(1750);
+  spawnBottomRight(2000);
 }
