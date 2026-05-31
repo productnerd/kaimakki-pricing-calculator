@@ -319,9 +319,6 @@ export default function App() {
   const freePhotos = Math.ceil(numVideos / 2); // half of videos are free
   const maxBrands = Math.floor(numVideos / 4);
 
-  useEffect(() => {
-    setNumPhotos((prev) => Math.max(prev, freePhotos));
-  }, [freePhotos]);
 
   useEffect(() => {
     setNumBrands((prev) => Math.min(Math.max(prev, 1), maxBrands));
@@ -413,7 +410,7 @@ export default function App() {
                   min={4}
                   max={100}
                   value={numPhotos}
-                  onChange={(e) => setNumPhotos(Math.max(Number(e.target.value), freePhotos))}
+                  onChange={(e) => setNumPhotos(Number(e.target.value))}
                   className="slider"
                 />
                 <div className="slider-value">{numPhotos}</div>
