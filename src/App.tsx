@@ -134,11 +134,11 @@ const NORMAL_PRICE = 190;
 
 const AGENCY_TIERS = [
   { min: 1, max: 4, price: 160 },
-  { min: 5, max: 8, price: 156 },
-  { min: 9, max: 15, price: 152 },
-  { min: 16, max: 25, price: 148 },
-  { min: 26, max: 36, price: 144 },
-  { min: 37, max: 50, price: 140 },
+  { min: 5, max: 8, price: 154 },
+  { min: 9, max: 15, price: 148 },
+  { min: 16, max: 25, price: 143 },
+  { min: 26, max: 36, price: 137 },
+  { min: 37, max: 50, price: 131 },
 ];
 
 function getTierDiscount(tierIndex: number): number {
