@@ -314,13 +314,18 @@ export default function App() {
   const [numCarousels, setNumCarousels] = useState(0);
   const [showGif, setShowGif] = useState(false);
   const [creativeDirection, setCreativeDirection] = useState(false);
+  const [numBrands, setNumBrands] = useState(1);
 
   const freePhotos = Math.ceil(numVideos / 2); // half of videos are free
+  const maxBrands = Math.floor(numVideos / 4);
 
-  // Lock photo slider minimum to free photos (half of videos)
   useEffect(() => {
     setNumPhotos((prev) => Math.max(prev, freePhotos));
   }, [freePhotos]);
+
+  useEffect(() => {
+    setNumBrands((prev) => Math.min(Math.max(prev, 1), maxBrands));
+  }, [maxBrands]);
 
   const extraPhotos = Math.max(0, numPhotos - freePhotos);
   const { total: extraPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(extraPhotos, EXTRA_PHOTO_BASE);
@@ -333,8 +338,9 @@ export default function App() {
   const prepayment = total / 2;
 
   const totalPosts = numVideos + numPhotos + numCarousels;
+  const postsPerBrand = totalPosts / numBrands;
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
-  const weeksOfContent = perWeek > 0 ? totalPosts / perWeek : 0;
+  const weeksOfContent = perWeek > 0 ? postsPerBrand / perWeek : 0;
   const monthsOfContent = weeksOfContent / 4.33;
 
   const avgPrice = numVideos > 0 ? baseTotal / numVideos : 0;
@@ -463,6 +469,24 @@ export default function App() {
                 <span>3×/wk</span>
               </div>
 
+              <label className="card-label" style={{ marginTop: "24px" }}>How many brands will you use these for?</label>
+              <p className="card-note">Minimum 4 videos per brand</p>
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={1}
+                  max={Math.max(1, maxBrands)}
+                  value={numBrands}
+                  onChange={(e) => setNumBrands(Number(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value">{numBrands}</div>
+              </div>
+              <div className="slider-hints">
+                <span>1</span>
+                <span>{Math.max(1, maxBrands)}</span>
+              </div>
+
               <div className="stats-grid stats-grid-full" style={{ marginTop: "16px" }}>
                 <div className="stat-box">
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
@@ -490,7 +514,9 @@ export default function App() {
                       : `${Math.round(weeksOfContent)}`}
                   </div>
                   <div className="stat-label">
-                    {monthsOfContent >= 1 ? "Months of Content" : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content`}
+                    {monthsOfContent >= 1
+                      ? `Months of Content${numBrands > 1 ? " per Brand" : ""}`
+                      : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content${numBrands > 1 ? " per Brand" : ""}`}
                   </div>
                 </div>
               </div>
