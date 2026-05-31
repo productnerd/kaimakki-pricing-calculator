@@ -313,6 +313,7 @@ export default function App() {
   const [numPhotos, setNumPhotos] = useState(4);
   const [numCarousels, setNumCarousels] = useState(0);
   const [showGif, setShowGif] = useState(false);
+  const [creativeDirection, setCreativeDirection] = useState(false);
 
   const freePhotos = Math.ceil(numVideos / 2); // half of videos are free
 
@@ -327,7 +328,8 @@ export default function App() {
 
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
-  const total = baseTotal + extraPhotosTotal + carouselsTotal;
+  const cdDiscount = creativeDirection ? 0.9 : 1;
+  const total = Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * cdDiscount);
   const prepayment = total / 2;
 
   const totalPosts = numVideos + numPhotos + numCarousels;
@@ -347,9 +349,30 @@ export default function App() {
           <img src={logo} alt="Kaimakki" className="logo-img" />
         </a>
         <p className="subtitle">Agency Pricing Calculator</p>
+        <p className="header-note">These videos can be used for multiple of your accounts but the minimum per account is 4. All content must be posted within three months of purchase.</p>
       </header>
 
       <main className="main">
+        {/* Creative Direction Toggle */}
+        <section className="card card-full creative-direction-card">
+          <label className="card-label">Will you handle creative direction?</label>
+          <p className="card-note">You will be deciding what topics + formats will be executed as well as preproduction. We execute for you from that point on.</p>
+          <div className="toggle-row">
+            <button
+              className={`toggle ${creativeDirection ? "toggle-on" : ""}`}
+              onClick={() => setCreativeDirection((v) => !v)}
+              role="switch"
+              aria-checked={creativeDirection}
+            >
+              <span className="toggle-knob" />
+            </button>
+            <span className="toggle-label">
+              {creativeDirection ? "Yes — " : "No"}
+              {creativeDirection && <span className="toggle-discount">10% discount applied</span>}
+            </span>
+          </div>
+        </section>
+
         <div className="two-col">
           {/* LEFT COLUMN — Inputs */}
           <div className="col-left">
@@ -566,6 +589,12 @@ export default function App() {
                   <span>Total</span>
                   <span className="total-amount">&euro;{total.toLocaleString()}</span>
                 </div>
+                {creativeDirection && (
+                  <div className="savings-row">
+                    <span>Creative direction discount (10% OFF)</span>
+                    <span className="savings-amount">&euro;{Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
+                  </div>
+                )}
                 {savings > 0 && (
                   <div className="savings-row">
                     <span>Agency discount ({discountPct}% OFF)</span>
@@ -613,6 +642,7 @@ export default function App() {
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
           <h2 className="card-label">Agency Price Tiers</h2>
+          <p className="card-note">The bigger the bundle you purchase, the lower price tier per video you unlock. Below you see your current tier based on your selection.</p>
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
@@ -693,9 +723,12 @@ export default function App() {
         <section className="card card-full">
           <h2 className="card-label">How It Works — Production Stages</h2>
           <div className="accordion">
-            {PRODUCTION_STAGES.map((stage) => (
-              <AccordionItem key={stage.title} stage={stage} />
-            ))}
+            {PRODUCTION_STAGES.map((stage, idx) => {
+              const effectiveStage = creativeDirection && idx <= 1
+                ? { ...stage, handler: "agency" as const }
+                : stage;
+              return <AccordionItem key={stage.title} stage={effectiveStage} />;
+            })}
           </div>
 
           <div className="accordion accordion-sm" style={{ marginTop: "24px" }}>
