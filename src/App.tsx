@@ -130,7 +130,7 @@ const TERMS_SECTIONS = [
   },
 ];
 
-const NORMAL_PRICE = 190;
+const NORMAL_PRICE = 195;
 
 const AGENCY_TIERS = [
   { min: 1, max: 4, price: 162 },
