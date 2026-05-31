@@ -310,7 +310,7 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
   const [postsPerMonth, setPostsPerMonth] = useState(4);
-  const [numPhotos, setNumPhotos] = useState(4);
+  const [numPhotos, setNumPhotos] = useState(0);
   const [numCarousels, setNumCarousels] = useState(0);
   const [showGif, setShowGif] = useState(false);
   const [creativeDirection, setCreativeDirection] = useState(false);
@@ -407,7 +407,7 @@ export default function App() {
               <div className="slider-row">
                 <input
                   type="range"
-                  min={4}
+                  min={0}
                   max={100}
                   value={numPhotos}
                   onChange={(e) => setNumPhotos(Number(e.target.value))}
@@ -416,7 +416,7 @@ export default function App() {
                 <div className="slider-value">{numPhotos}</div>
               </div>
               <div className="slider-hints">
-                <span>4</span>
+                <span>0</span>
                 <span>100</span>
               </div>
             </section>
