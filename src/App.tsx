@@ -130,41 +130,26 @@ const TERMS_SECTIONS = [
   },
 ];
 
+const NORMAL_PRICE = 180;
+
 const AGENCY_TIERS = [
-  { min: 1, max: 4, price: 170, normalPrice: 200 },
-  { min: 5, max: 8, price: 152, normalPrice: null },
-  { min: 9, max: 15, price: 138, normalPrice: 156 },
-  { min: 16, max: 25, price: 132, normalPrice: null },
-  { min: 26, max: 36, price: 128, normalPrice: null },
-  { min: 37, max: 50, price: 125, normalPrice: 137 },
+  { min: 1, max: 4, price: 170 },
+  { min: 5, max: 8, price: 152 },
+  { min: 9, max: 15, price: 138 },
+  { min: 16, max: 25, price: 132 },
+  { min: 26, max: 36, price: 128 },
+  { min: 37, max: 50, price: 125 },
 ];
 
-// For tiers without a normal price, interpolate discount % from surrounding tiers
 function getTierDiscount(tierIndex: number): number {
-  const tier = AGENCY_TIERS[tierIndex];
-  if (tier.normalPrice) {
-    return Math.round(((tier.normalPrice - tier.price) / tier.normalPrice) * 100);
-  }
-  // Find nearest tier before with a normal price
-  let prevIdx = tierIndex - 1;
-  while (prevIdx >= 0 && !AGENCY_TIERS[prevIdx].normalPrice) prevIdx--;
-  // Find nearest tier after with a normal price
-  let nextIdx = tierIndex + 1;
-  while (nextIdx < AGENCY_TIERS.length && !AGENCY_TIERS[nextIdx].normalPrice) nextIdx++;
-
-  const prevDiscount = prevIdx >= 0 ? getTierDiscount(prevIdx) : 0;
-  const nextDiscount = nextIdx < AGENCY_TIERS.length ? getTierDiscount(nextIdx) : prevDiscount;
-
-  const totalSteps = nextIdx - prevIdx;
-  const currentStep = tierIndex - prevIdx;
-  return Math.round(prevDiscount + (nextDiscount - prevDiscount) * (currentStep / totalSteps));
+  return Math.round(((NORMAL_PRICE - AGENCY_TIERS[tierIndex].price) / NORMAL_PRICE) * 100);
 }
 
 function calculateTotal(numVideos: number) {
   let remaining = numVideos;
   let total = 0;
   let normalTotal = 0;
-  const breakdown: { count: number; price: number; normalPrice: number | null; tierIndex: number }[] = [];
+  const breakdown: { count: number; price: number; tierIndex: number }[] = [];
 
   for (let idx = 0; idx < AGENCY_TIERS.length; idx++) {
     const tier = AGENCY_TIERS[idx];
@@ -172,11 +157,8 @@ function calculateTotal(numVideos: number) {
     const tierCapacity = tier.max - tier.min + 1;
     const videosInTier = Math.min(remaining, tierCapacity);
     total += videosInTier * tier.price;
-    // For tiers without a normal price, derive it from the interpolated discount
-    const discount = getTierDiscount(idx);
-    const impliedNormal = tier.normalPrice ?? Math.round(tier.price / (1 - discount / 100));
-    normalTotal += videosInTier * impliedNormal;
-    breakdown.push({ count: videosInTier, price: tier.price, normalPrice: tier.normalPrice, tierIndex: idx });
+    normalTotal += videosInTier * NORMAL_PRICE;
+    breakdown.push({ count: videosInTier, price: tier.price, tierIndex: idx });
     remaining -= videosInTier;
   }
 
@@ -537,9 +519,7 @@ export default function App() {
                       <div key={i} className="breakdown-row">
                         <span className="breakdown-desc">
                           {tier.count} video{tier.count > 1 ? "s" : ""} &times;{" "}
-                          {tier.normalPrice && (
-                            <><span className="price-normal">&euro;{tier.normalPrice}</span>{" "}</>
-                          )}
+                          <span className="price-normal">&euro;{NORMAL_PRICE}</span>{" "}
                           &euro;{tier.price}
                           <span className="discount-badge">-{discount}%</span>
                         </span>
@@ -683,14 +663,10 @@ export default function App() {
                   <div className="tier-range">
                     {tier.min <= 1 ? tier.max : tier.min === tier.max ? tier.min : `${tier.min}-${tier.max}`} videos
                   </div>
-                  {tier.normalPrice ? (
-                    <div className="tier-normal-price">&euro;{tier.normalPrice}</div>
-                  ) : (
-                    <div className="tier-na">not available</div>
-                  )}
+                  <div className="tier-normal-price">&euro;{NORMAL_PRICE}</div>
                   <div className="tier-price">&euro;{tier.price}</div>
                   <div className="tier-unit">per video</div>
-                  {tier.normalPrice && <div className="tier-discount">~{discount}% off</div>}
+                  <div className="tier-discount">-{discount}% off</div>
                 </div>
               );
             })}
