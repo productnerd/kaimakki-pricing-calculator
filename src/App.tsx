@@ -131,7 +131,7 @@ const TERMS_SECTIONS = [
 ];
 
 const AGENCY_TIERS = [
-  { min: 1, max: 4, price: 170, normalPrice: 197 },
+  { min: 1, max: 4, price: 170, normalPrice: 200 },
   { min: 5, max: 8, price: 152, normalPrice: null },
   { min: 9, max: 15, price: 138, normalPrice: 156 },
   { min: 16, max: 25, price: 132, normalPrice: null },
@@ -330,7 +330,7 @@ export default function App() {
 
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
-  const cdDiscount = creativeDirection ? 0.85 : 1;
+  const cdDiscount = creativeDirection ? 0.9 : 1;
   const total = Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * cdDiscount);
   const prepayment = total / 2;
 
@@ -371,7 +371,7 @@ export default function App() {
             </button>
             <span className="toggle-label">
               {creativeDirection ? "Yes — " : "No"}
-              {creativeDirection && <span className="toggle-discount">15% discount applied</span>}
+              {creativeDirection && <span className="toggle-discount">10% discount applied</span>}
             </span>
           </div>
         </section>
@@ -614,8 +614,8 @@ export default function App() {
                 </div>
                 {creativeDirection && (
                   <div className="savings-row">
-                    <span>Creative direction discount (15% OFF)</span>
-                    <span className="savings-amount">&euro;{Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * 0.15).toLocaleString()} saved</span>
+                    <span>Creative direction discount (10% OFF)</span>
+                    <span className="savings-amount">&euro;{Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
                   </div>
                 )}
                 {savings > 0 && (
