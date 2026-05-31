@@ -70,7 +70,7 @@ const TERMS_SECTIONS = [
       "Prices do not include posting or setting up social media accounts. We can propose a content calendar but the marketing agency is to handle both.",
       "We do not handle community management (responding to comments and DMs).",
       "Prices are for a single client. Agency cannot purchase a pack of 20 videos and use it across 2+ clients. This is because there is a fixed cost per client for onboarding, strategy and comms as well as the shooting. It also keeps accounts more tidy.",
-      "Prices include video PLUS half the number of videos as free photo posts. Each photo post is a complete, ready-to-publish post including caption concept, text and professional design — not just a raw photo.",
+      "Each photo post is a complete, ready-to-publish post including caption concept, text and professional design — not just a raw photo.",
       "Shoot time is proportional to the number of videos: 4 videos, 4 hours, +30 minutes for every extra video. So for example for 8 videos the max shoot time is 6 hours.",
       "For Limassol: Transport to and from the location beyond a single location is included in the shoot time. This means that if two shoots are needed and the total shoot time is 4 hours then we will subtract the transport time of the second shoot from the 4 hours.",
       "Outside Limassol: Given the extra hours on the road and fuel costs, this will incur an additional cost of €60 per shoot.",
@@ -130,10 +130,10 @@ const TERMS_SECTIONS = [
   },
 ];
 
-const NORMAL_PRICE = 180;
+const NORMAL_PRICE = 190;
 
 const AGENCY_TIERS = [
-  { min: 1, max: 4, price: 170 },
+  { min: 1, max: 4, price: 162 },
   { min: 5, max: 8, price: 152 },
   { min: 9, max: 15, price: 138 },
   { min: 16, max: 25, price: 132 },
@@ -298,22 +298,18 @@ export default function App() {
   const [creativeDirection, setCreativeDirection] = useState(false);
   const [numBrands, setNumBrands] = useState(1);
 
-  const freePhotos = Math.ceil(numVideos / 2); // half of videos are free
   const maxBrands = Math.floor(numVideos / 4);
-
 
   useEffect(() => {
     setNumBrands((prev) => Math.min(Math.max(prev, 1), maxBrands));
   }, [maxBrands]);
-
-  const extraPhotos = Math.max(0, numPhotos - freePhotos);
-  const { total: extraPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(extraPhotos, EXTRA_PHOTO_BASE);
+  const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(numPhotos, EXTRA_PHOTO_BASE);
   const { total: carouselsTotal, discountPct: carouselDiscountPct } = calculateExtrasTotal(numCarousels, CAROUSEL_BASE);
 
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
   const cdDiscount = creativeDirection ? 0.9 : 1;
-  const total = Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * cdDiscount);
+  const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount);
   const prepayment = total / 2;
 
   const totalPosts = numVideos + numPhotos + numCarousels;
@@ -385,7 +381,7 @@ export default function App() {
             {/* Photo Posts */}
             <section className="card">
               <label className="card-label">Photo posts</label>
-              <p className="card-note">{freePhotos} included free{extraPhotos > 0 ? `. Extra at \u20AC${Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post` : ""}{extraPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post{numPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -476,7 +472,6 @@ export default function App() {
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
                   <div className="stat-number">{numPhotos}</div>
                   <div className="stat-label">Photo Posts</div>
-                  {freePhotos > 0 && <div className="stat-bonus">{freePhotos} free</div>}
                 </div>
                 {numCarousels > 0 && (
                   <div className="stat-box">
@@ -531,19 +526,19 @@ export default function App() {
               </div>
 
               {/* Photos section */}
-              {extraPhotos > 0 && (
+              {numPhotos > 0 && (
                 <div className="breakdown-section">
                   <div className="breakdown-section-header">
                     <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
-                    <span className="breakdown-section-title">Extra Photo Posts</span>
+                    <span className="breakdown-section-title">Photo Posts</span>
                   </div>
                   <div className="breakdown-list">
                     <div className="breakdown-row">
                       <span className="breakdown-desc">
-                        {extraPhotos} extra photo post{extraPhotos > 1 ? "s" : ""} &times; &euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}
+                        {numPhotos} photo post{numPhotos > 1 ? "s" : ""} &times; &euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}
                         {photoDiscountPct > 0 && <span className="discount-badge">-{photoDiscountPct}%</span>}
                       </span>
-                      <span className="breakdown-amount">&euro;{extraPhotosTotal.toLocaleString()}</span>
+                      <span className="breakdown-amount">&euro;{numPhotosTotal.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -573,10 +568,10 @@ export default function App() {
                   <span className="avg-price-label">Avg. per video</span>
                   <span className="avg-price-value">&euro;{Math.round(avgPrice)}</span>
                 </div>
-                {extraPhotos > 0 && (
+                {numPhotos > 0 && (
                   <div className="avg-price-item">
                     <span className="avg-price-label">Avg. per photo post</span>
-                    <span className="avg-price-value">&euro;{Math.round(extraPhotosTotal / extraPhotos)}</span>
+                    <span className="avg-price-value">&euro;{Math.round(numPhotosTotal / numPhotos)}</span>
                   </div>
                 )}
                 {numCarousels > 0 && (
@@ -595,7 +590,7 @@ export default function App() {
                 {creativeDirection && (
                   <div className="savings-row">
                     <span>Creative direction discount (10% OFF)</span>
-                    <span className="savings-amount">&euro;{Math.round((baseTotal + extraPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
+                    <span className="savings-amount">&euro;{Math.round((baseTotal + numPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
                   </div>
                 )}
                 {savings > 0 && (
@@ -674,9 +669,9 @@ export default function App() {
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
-            Extra Photo Posts
+            Photo Posts
           </h3>
-          <p className="card-note">Half of video count in photo posts are included free. Each photo post is a complete post with caption, concept and design — not just a raw photo. Extra photo posts priced at &euro;{EXTRA_PHOTO_BASE}/post with volume discounts</p>
+          <p className="card-note">Each photo post is a complete post with caption, concept and design — not just a raw photo. Priced at &euro;{EXTRA_PHOTO_BASE}/post with volume discounts</p>
           <div className="tiers-grid tiers-grid-5">
             {[
               { label: "1–2", discount: 0, min: 1 },
@@ -685,8 +680,8 @@ export default function App() {
               { label: "11–20", discount: 12, min: 11 },
               { label: "21+", discount: 15, min: 21 },
             ].map((t) => (
-              <div key={t.label} className={`tier-box ${extraPhotos >= t.min ? "tier-active" : ""}`}>
-                <div className="tier-range">{t.label} extra</div>
+              <div key={t.label} className={`tier-box ${numPhotos >= t.min ? "tier-active" : ""}`}>
+                <div className="tier-range">{t.label} photos</div>
                 <div className="tier-price">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - t.discount / 100))}</div>
                 <div className="tier-unit">per photo post</div>
                 {t.discount > 0 && <div className="tier-discount">-{t.discount}%</div>}
