@@ -349,7 +349,7 @@ export default function App() {
             </button>
             <span className="toggle-label">
               {creativeDirection ? "Yes — " : "No"}
-              {creativeDirection && <span className="toggle-discount">10% discount applied</span>}
+              {creativeDirection && <span className="toggle-discount">12% discount applied</span>}
             </span>
           </div>
         </section>
@@ -589,7 +589,7 @@ export default function App() {
                 </div>
                 {creativeDirection && (
                   <div className="savings-row">
-                    <span>Creative direction discount (10% OFF)</span>
+                    <span>Creative direction discount (12% OFF)</span>
                     <span className="savings-amount">&euro;{Math.round((baseTotal + numPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
                   </div>
                 )}
