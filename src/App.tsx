@@ -308,7 +308,7 @@ export default function App() {
 
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
-  const cdDiscount = creativeDirection ? 0.9 : 1;
+  const cdDiscount = creativeDirection ? 0.88 : 1;
   const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount);
   const prepayment = total / 2;
 
