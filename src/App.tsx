@@ -296,6 +296,7 @@ export default function App() {
   const [numCarousels, setNumCarousels] = useState(0);
   const [showGif, setShowGif] = useState(false);
   const [creativeDirection, setCreativeDirection] = useState(false);
+  const [handleFilming, setHandleFilming] = useState(false);
   const [numBrands, setNumBrands] = useState(1);
 
   const maxBrands = Math.floor(numVideos / 4);
@@ -309,7 +310,8 @@ export default function App() {
   const perWeek = postsPerMonth / 4.33;
   const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
   const cdDiscount = creativeDirection ? 0.88 : 1;
-  const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount);
+  const filmingDiscount = handleFilming ? 0.75 : 1;
+  const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount * filmingDiscount);
   const prepayment = total / 2;
 
   const totalPosts = numVideos + numPhotos + numCarousels;
@@ -319,6 +321,8 @@ export default function App() {
   const monthsOfContent = weeksOfContent / 4.33;
 
   const avgPrice = numVideos > 0 ? baseTotal / numVideos : 0;
+  const avgPriceDiscounted = avgPrice * cdDiscount * filmingDiscount;
+  const toggleDiscountActive = creativeDirection || handleFilming;
   const savings = normalTotal - baseTotal;
   const discountPct = normalTotal > 0 ? Math.round((savings / normalTotal) * 100) : 0;
 
@@ -350,6 +354,26 @@ export default function App() {
             <span className="toggle-label">
               {creativeDirection ? "Yes — " : "No"}
               {creativeDirection && <span className="toggle-discount">12% discount applied</span>}
+            </span>
+          </div>
+        </section>
+
+        {/* Filming Toggle */}
+        <section className="card card-full creative-direction-card">
+          <label className="card-label">Will you handle filming?</label>
+          <p className="card-note">You will be shooting the footage yourself. We handle the rest from that point on.</p>
+          <div className="toggle-row">
+            <button
+              className={`toggle ${handleFilming ? "toggle-on" : ""}`}
+              onClick={() => setHandleFilming((v) => !v)}
+              role="switch"
+              aria-checked={handleFilming}
+            >
+              <span className="toggle-knob" />
+            </button>
+            <span className="toggle-label">
+              {handleFilming ? "Yes — " : "No"}
+              {handleFilming && <span className="toggle-discount">25% discount applied</span>}
             </span>
           </div>
         </section>
@@ -566,7 +590,12 @@ export default function App() {
               <div className="avg-prices">
                 <div className="avg-price-item">
                   <span className="avg-price-label">Avg. per video</span>
-                  <span className="avg-price-value">&euro;{Math.round(avgPrice)}</span>
+                  <span className="avg-price-value">
+                    {toggleDiscountActive && (
+                      <span className="price-normal">&euro;{Math.round(avgPrice)}</span>
+                    )}{" "}
+                    &euro;{Math.round(toggleDiscountActive ? avgPriceDiscounted : avgPrice)}
+                  </span>
                 </div>
                 {numPhotos > 0 && (
                   <div className="avg-price-item">
@@ -591,6 +620,12 @@ export default function App() {
                   <div className="savings-row">
                     <span>Creative direction discount (12% OFF)</span>
                     <span className="savings-amount">&euro;{Math.round((baseTotal + numPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
+                  </div>
+                )}
+                {handleFilming && (
+                  <div className="savings-row">
+                    <span>Filming discount (25% OFF)</span>
+                    <span className="savings-amount">&euro;{Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount * 0.25).toLocaleString()} saved</span>
                   </div>
                 )}
                 {savings > 0 && (
