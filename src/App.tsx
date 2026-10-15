@@ -379,13 +379,15 @@ export default function App() {
   const cdDiscount = creativeDirection ? 0.88 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
 
-  const volumeLine = Math.round(standardTotal - afterVolume);
+  // Volume discount is videos and carousels only (Growth level and up); photos have their own volume discount
+  const volumeLine = Math.round(videoUnits * (STANDARD_VIDEO_RATE - levelRate));
+  const photoVolumeLine = photosStandard - numPhotosTotal;
   const quarterlyLine = Math.round(quarterlySavings);
   const agencyLine = Math.round(afterQuarterly - afterAgency);
   const cdLine = Math.round(afterAgency * (1 - cdDiscount));
   const filmingLine = Math.round(afterAgency * cdDiscount * (1 - filmingDiscount));
   // The total is the receipt itself, so the lines always add up exactly
-  const total = standardTotal - volumeLine - quarterlyLine - agencyLine - cdLine - filmingLine;
+  const total = standardTotal - volumeLine - photoVolumeLine - quarterlyLine - agencyLine - cdLine - filmingLine;
   const perMonth = Math.round(total / months);
   const prepayment = total / 2;
 
@@ -403,9 +405,10 @@ export default function App() {
   const quarterlyPct = getQuarterlyPct(plan);
   const volumeTip =
     `Our standard rate is ${eur(STANDARD_VIDEO_RATE)} per video (our Starter plan's monthly price per video; a carousel counts as half a video). ` +
-    `Posting more videos per month puts you on a bigger plan level that costs less per video. ` +
-    `At ${pace.toFixed(1)} videos per month per brand you're on our ${plan.name} level: ${eur(levelRate)} per video.` +
-    (photoDiscountPct > 0 ? ` Also includes ${photoDiscountPct}% off photo posts for ordering ${numPhotos}.` : "");
+    `From our Growth level up, posting more videos per month costs less per video. ` +
+    `At ${pace.toFixed(1)} videos per month per brand you're on our ${plan.name} level: ${eur(levelRate)} per video` +
+    (volumeLine > 0 ? "." : ", so no volume discount yet.");
+  const photoVolumeTip = `${PHOTO_VOLUME_TIP} You're ordering ${numPhotos}, so ${photoDiscountPct}% off.`;
   const quarterlyTip = quarterly
     ? `You're committing to ${MAX_MONTHS} months, so you get our quarterly plan price instead of monthly: ${quarterlyPct}% less on videos and carousels at the ${plan.name} level.`
     : `Commit to ${MAX_MONTHS} months to get our quarterly plan price instead of monthly: ${quarterlyPct}% less on videos and carousels at the ${plan.name} level.`;
@@ -426,6 +429,7 @@ export default function App() {
       null,
       ["Standard price", eur(standardTotal)],
       ["Volume discount", `-${eur(volumeLine)}`],
+      ...(numPhotos > 0 ? [["Photo volume discount", `-${eur(photoVolumeLine)}`] as [string, string]] : []),
       ["Quarterly plan discount", `-${eur(quarterlyLine)}`],
       [`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`],
       ...(creativeDirection ? [["Creative direction discount (12%)", `-${eur(cdLine)}`] as [string, string]] : []),
@@ -717,6 +721,7 @@ export default function App() {
                   <span>{eur(standardTotal)}</span>
                 </div>
                 <DiscountRow label="Volume discount" tip={volumeTip} amount={volumeLine} />
+                {numPhotos > 0 && <DiscountRow label="Photo volume discount" tip={photoVolumeTip} amount={photoVolumeLine} />}
                 <DiscountRow label="Quarterly plan discount" tip={quarterlyTip} amount={quarterlyLine} />
                 <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />
                 {creativeDirection && <DiscountRow label="Creative direction discount (12%)" tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
