@@ -66,7 +66,7 @@ const TERMS_SECTIONS = [
   {
     title: "Service",
     items: [
-      "Each video is a maximum of 45 seconds.",
+      "Each video can run 5 seconds longer than the matching plan allows: 45 seconds at Starter level, 50 at Growth level, 55 at Let's go level.",
       "Prices do not include posting or setting up social media accounts. We can propose a content calendar but the marketing agency is to handle both.",
       "We do not handle community management (responding to comments and DMs).",
       "Prices are for a single client. Agency cannot purchase a pack of 20 videos and use it across 2+ clients. This is because there is a fixed cost per client for onboarding, strategy and comms as well as the shooting. It also keeps accounts more tidy.",
@@ -112,7 +112,7 @@ const TERMS_SECTIONS = [
       "50% prepayment upfront. Non-refundable unless Kaimakki cancels.",
       "50% upon delivery of all videos.",
       "Shoots outside Limassol incur an additional €60 per shoot for travel and fuel costs.",
-      "Videos longer than 45 seconds are subject to an additional charge depending on length and complexity.",
+      "Videos longer than your level's maximum length are subject to an additional charge depending on length and complexity.",
       "Additional aspect ratios (e.g. 16:9 horizontal, 1:1 square) beyond the default 9:16 vertical are charged extra per video.",
     ],
   },
@@ -132,34 +132,47 @@ const TERMS_SECTIONS = [
 
 const NORMAL_PRICE = 174;
 
-const AGENCY_TIERS = [
-  { min: 1, max: 5, price: 131 },
-  { min: 6, max: 8, price: 116 },
-  { min: 9, max: 15, price: 104 },
-  { min: 16, max: 25, price: 102 },
-  { min: 26, max: 36, price: 101 },
-  { min: 37, max: 50, price: 100 },
+// Our monthly plans (kaimakki.com), using the guaranteed (lower) number of videos per month.
+// Agencies pay 10% less than the plan matching their posting pace.
+const PLANS = [
+  { name: "Starter", videos: 4, monthly: 870, quarterly: 740, carousels: 2, maxSeconds: 40 },
+  { name: "Growth", videos: 6, monthly: 1160, quarterly: 950, carousels: 2, maxSeconds: 45 },
+  { name: "Let's go", videos: 8, monthly: 1390, quarterly: 1180, carousels: 3, maxSeconds: 50 },
 ];
+const AGENCY_DISCOUNT_PCT = 10;
+const EXTRA_SECONDS = 5; // agency videos may run this much longer than the matching plan allows
+const MAX_MONTHS = 3; // committing to 3 months unlocks our quarterly price
 
-function getTierDiscount(tierIndex: number): number {
-  return Math.round(((NORMAL_PRICE - AGENCY_TIERS[tierIndex].price) / NORMAL_PRICE) * 100);
+// Minimum posting pace: at least this many videos per brand per month
+const MIN_PACE = 4;
+
+function getPlanLevel(pace: number) {
+  return PLANS.find((p) => pace <= p.videos) ?? PLANS[PLANS.length - 1];
 }
 
-function getVideoTierIndex(numVideos: number): number {
-  for (let idx = 0; idx < AGENCY_TIERS.length; idx++) {
-    if (numVideos <= AGENCY_TIERS[idx].max) return idx;
-  }
-  return AGENCY_TIERS.length - 1;
+function getAgencyPlanPrice(plan: (typeof PLANS)[number], quarterly: boolean): number {
+  return (quarterly ? plan.quarterly : plan.monthly) * (1 - AGENCY_DISCOUNT_PCT / 100);
 }
 
-// Flat pricing: your whole order is charged at the single rate for your volume band
-function calculateTotal(numVideos: number) {
-  const tierIndex = getVideoTierIndex(numVideos);
-  const price = AGENCY_TIERS[tierIndex].price;
-  const total = numVideos * price;
-  const normalTotal = numVideos * NORMAL_PRICE;
-  const breakdown = [{ count: numVideos, price, tierIndex }];
-  return { total, normalTotal, breakdown, price };
+function getListDiscount(price: number): number {
+  return Math.round(((NORMAL_PRICE - price) / NORMAL_PRICE) * 100);
+}
+
+// Your per-video rate is set so that a full plan bundle at your pace (its videos plus its carousels,
+// each carousel counting as half a video) costs 10% less than that plan — monthly, or quarterly at 3 months
+function calculateTotal(numVideos: number, numBrands: number, months: number) {
+  const pace = numVideos / numBrands / months;
+  const plan = getPlanLevel(pace);
+  const quarterly = months >= MAX_MONTHS;
+  const price = getAgencyPlanPrice(plan, quarterly) / (Math.min(pace, plan.videos) + plan.carousels / 2);
+  return {
+    total: Math.round(numVideos * price),
+    normalTotal: numVideos * NORMAL_PRICE,
+    price,
+    pace,
+    plan,
+    quarterly,
+  };
 }
 
 // Discount curve for extra photos (carousels are priced at half the video rate)
@@ -182,17 +195,6 @@ function calculateExtrasTotal(count: number, basePrice: number): { total: number
 const MIN_VIDEOS = 4;
 const MAX_VIDEOS = 50;
 const MAX_PER_WEEK = 3;
-
-const MIN_POSTS = 1;
-const MAX_POSTS = 12; // per month
-
-function getFrequencyLabel(postsPerMonth: number): string {
-  if (postsPerMonth <= 3) return `${postsPerMonth}× per month`;
-  if (postsPerMonth === 4) return "1× per week";
-  if (postsPerMonth === 8) return "2× per week";
-  if (postsPerMonth === 12) return "3× per week";
-  return `${postsPerMonth}× per month`;
-}
 
 function TermsAccordion() {
   const [open, setOpen] = useState(false);
@@ -287,7 +289,7 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
 
 export default function App() {
   const [numVideos, setNumVideos] = useState(4);
-  const [postsPerMonth, setPostsPerMonth] = useState(4);
+  const [months, setMonths] = useState(1);
   const [numPhotos, setNumPhotos] = useState(0);
   const [numCarousels, setNumCarousels] = useState(0);
   const [showGif, setShowGif] = useState(false);
@@ -295,15 +297,23 @@ export default function App() {
   const [handleFilming, setHandleFilming] = useState(false);
   const [numBrands, setNumBrands] = useState(1);
 
-  const maxBrands = Math.floor(numVideos / 4);
+  // Enforce the minimum pace: videos must cover MIN_PACE per brand per month
+  const maxBrands = Math.max(1, Math.floor(numVideos / (MIN_PACE * months)));
+  const maxMonths = Math.max(1, Math.min(MAX_MONTHS, Math.floor(numVideos / (MIN_PACE * numBrands))));
 
+  // When videos drop, keep the chosen months if possible and reduce brands first
   useEffect(() => {
-    setNumBrands((prev) => Math.min(Math.max(prev, 1), maxBrands));
-  }, [maxBrands]);
+    const m = Math.min(months, Math.max(1, Math.floor(numVideos / MIN_PACE)));
+    const b = Math.min(Math.max(numBrands, 1), Math.max(1, Math.floor(numVideos / (MIN_PACE * m))));
+    if (m !== months) setMonths(m);
+    if (b !== numBrands) setNumBrands(b);
+  }, [numVideos, months, numBrands]);
   const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(numPhotos, EXTRA_PHOTO_BASE);
 
-  const perWeek = postsPerMonth / 4.33;
-  const { total: baseTotal, normalTotal, breakdown, price: videoPrice } = useMemo(() => calculateTotal(numVideos), [numVideos]);
+  const { total: baseTotal, normalTotal, price: videoPrice, pace, plan, quarterly } = useMemo(
+    () => calculateTotal(numVideos, numBrands, months),
+    [numVideos, numBrands, months]
+  );
 
   // A carousel costs half a video (2 carousels = 1 video), at your own per-video rate
   const carouselPrice = videoPrice / 2;
@@ -314,11 +324,7 @@ export default function App() {
   const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount * filmingDiscount);
   const prepayment = total / 2;
 
-  const totalPosts = numVideos + numPhotos + numCarousels;
-  const postsPerBrand = totalPosts / numBrands;
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
-  const weeksOfContent = perWeek > 0 ? postsPerBrand / perWeek : 0;
-  const monthsOfContent = weeksOfContent / 4.33;
 
   const avgPrice = numVideos > 0 ? baseTotal / numVideos : 0;
   const avgPriceDiscounted = avgPrice * cdDiscount * filmingDiscount;
@@ -334,7 +340,7 @@ export default function App() {
           <img src={logo} alt="Kaimakki" className="logo-img" />
         </a>
         <p className="subtitle">Agency Pricing Calculator</p>
-        <p className="header-note">These videos can be used for multiple of your accounts but the minimum per account is 4. All content must be posted within three months of purchase.</p>
+        <p className="header-note">These videos can be used for multiple of your accounts but the minimum is 4 videos per account per month. All content must be posted within three months of purchase.</p>
       </header>
 
       <main className="main">
@@ -387,6 +393,7 @@ export default function App() {
             {/* Video Count */}
             <section className="card">
               <label className="card-label">How many videos do you need?</label>
+              <p className="card-note">Up to {plan.maxSeconds + EXTRA_SECONDS} seconds each at your posting pace</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -453,31 +460,31 @@ export default function App() {
           <div className="col-right">
             {/* Frequency + Stats */}
             <section className="card">
-              <label className="card-label">How often will you post?</label>
-              <p className="card-note">Posts include videos, photos and carousels</p>
-              <div className="slider-row">
-                <input
-                  type="range"
-                  min={MIN_POSTS}
-                  max={MAX_POSTS}
-                  value={postsPerMonth}
-                  onChange={(e) => setPostsPerMonth(Number(e.target.value))}
-                  className="slider"
-                />
-                <div className="slider-value slider-value-sm">{getFrequencyLabel(postsPerMonth)}</div>
-              </div>
-              <div className="slider-hints">
-                <span>1×/mo</span>
-                <span>3×/wk</span>
-              </div>
-
-              <label className="card-label" style={{ marginTop: "24px" }}>How many brands will you use these for?</label>
-              <p className="card-note">Minimum 4 videos per brand</p>
+              <label className="card-label">Over how many months will you post these?</label>
+              <p className="card-note">Your posting pace sets your plan level (minimum {MIN_PACE} videos per brand per month). Commit to {MAX_MONTHS} months to get our quarterly rate</p>
               <div className="slider-row">
                 <input
                   type="range"
                   min={1}
-                  max={Math.max(1, maxBrands)}
+                  max={maxMonths}
+                  value={months}
+                  onChange={(e) => setMonths(Number(e.target.value))}
+                  className="slider"
+                />
+                <div className="slider-value slider-value-sm">{months} month{months > 1 ? "s" : ""}</div>
+              </div>
+              <div className="slider-hints">
+                <span>1 month</span>
+                <span>{maxMonths} month{maxMonths > 1 ? "s" : ""}</span>
+              </div>
+
+              <label className="card-label" style={{ marginTop: "24px" }}>How many brands will you use these for?</label>
+              <p className="card-note">Minimum {MIN_PACE} videos per brand per month</p>
+              <div className="slider-row">
+                <input
+                  type="range"
+                  min={1}
+                  max={maxBrands}
                   value={numBrands}
                   onChange={(e) => setNumBrands(Number(e.target.value))}
                   className="slider"
@@ -486,7 +493,7 @@ export default function App() {
               </div>
               <div className="slider-hints">
                 <span>1</span>
-                <span>{Math.max(1, maxBrands)}</span>
+                <span>{maxBrands}</span>
               </div>
 
               <div className="stats-grid stats-grid-full" style={{ marginTop: "16px" }}>
@@ -509,16 +516,8 @@ export default function App() {
                 )}
                 <div className="stat-box">
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a1 1 0 011 1v1h10V3a1 1 0 112 0v1h2a2 2 0 012 2v14a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h2V3a1 1 0 011-1zM3 10v10h18V10H3z"/></svg>
-                  <div className="stat-number">
-                    {monthsOfContent >= 1
-                      ? `${monthsOfContent.toFixed(1)}`
-                      : `${Math.round(weeksOfContent)}`}
-                  </div>
-                  <div className="stat-label">
-                    {monthsOfContent >= 1
-                      ? `Months of Content${numBrands > 1 ? " per Brand" : ""}`
-                      : `Week${Math.round(weeksOfContent) !== 1 ? "s" : ""} of Content${numBrands > 1 ? " per Brand" : ""}`}
-                  </div>
+                  <div className="stat-number">{pace.toFixed(1)}</div>
+                  <div className="stat-label">Videos per Month{numBrands > 1 ? " per Brand" : ""}</div>
                 </div>
               </div>
             </section>
@@ -526,7 +525,7 @@ export default function App() {
             {/* Price Breakdown */}
             <section className="card">
               <h2 className="card-label">Price Breakdown</h2>
-              <p className="card-note">One flat rate per video, set by your total volume — the more you order, the lower the rate</p>
+              <p className="card-note">Your rate per video is set by your posting pace (videos per month, per brand). Post more often and commit for longer to lower it</p>
 
               {/* Videos section */}
               <div className="breakdown-section">
@@ -535,20 +534,19 @@ export default function App() {
                   <span className="breakdown-section-title">Videos</span>
                 </div>
                 <div className="breakdown-list">
-                  {breakdown.map((tier, i) => {
-                    const discount = getTierDiscount(tier.tierIndex);
-                    return (
-                      <div key={i} className="breakdown-row">
-                        <span className="breakdown-desc">
-                          {tier.count} video{tier.count > 1 ? "s" : ""} &times;{" "}
-                          <span className="price-normal">&euro;{NORMAL_PRICE}</span>{" "}
-                          &euro;{tier.price}
-                          <span className="discount-badge">-{discount}%</span>
-                        </span>
-                        <span className="breakdown-amount">&euro;{(tier.count * tier.price).toLocaleString()}</span>
-                      </div>
-                    );
-                  })}
+                  <div className="breakdown-row">
+                    <span className="breakdown-desc">
+                      {numVideos} videos &times;{" "}
+                      {getListDiscount(videoPrice) > 0 && <><span className="price-normal">&euro;{NORMAL_PRICE}</span>{" "}</>}
+                      &euro;{Math.round(videoPrice)}
+                      {getListDiscount(videoPrice) > 0 && <span className="discount-badge">-{getListDiscount(videoPrice)}%</span>}
+                    </span>
+                    <span className="breakdown-amount">&euro;{baseTotal.toLocaleString()}</span>
+                  </div>
+                  <div className="breakdown-row">
+                    <span className="breakdown-desc">Based on our {plan.name} plan, {quarterly ? "quarterly" : "monthly"} rate</span>
+                    <span className="breakdown-amount">-{AGENCY_DISCOUNT_PCT}%</span>
+                  </div>
                 </div>
               </div>
 
@@ -677,29 +675,24 @@ export default function App() {
 
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
-          <h2 className="card-label">Agency Price Tiers</h2>
-          <p className="card-note">The bigger the bundle you purchase, the lower price tier per video you unlock. Below you see your current tier based on your selection.</p>
+          <h2 className="card-label">Agency Pricing</h2>
+          <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {MAX_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price. Highlighted is your level.</p>
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
-            Videos
+            Videos — plan levels, per brand per month
           </h3>
-          <div className="tiers-grid tiers-grid-full">
-            {AGENCY_TIERS.map((tier, idx) => {
-              const isActive = numVideos >= tier.min;
-              const discount = getTierDiscount(idx);
+          <div className="tiers-grid">
+            {PLANS.map((p, i) => {
+              const from = i === 0 ? MIN_PACE : PLANS[i - 1].videos + 1;
+              const range = i === PLANS.length - 1 ? `${from}+` : from === p.videos ? `${from}` : `${from}–${p.videos}`;
               return (
-                <div
-                  key={tier.min}
-                  className={`tier-box ${isActive ? "tier-active" : ""}`}
-                >
-                  <div className="tier-range">
-                    {tier.min <= 1 ? tier.max : tier.min === tier.max ? tier.min : `${tier.min}-${tier.max}`} videos
-                  </div>
-                  <div className="tier-normal-price">&euro;{NORMAL_PRICE}</div>
-                  <div className="tier-price">&euro;{tier.price}</div>
-                  <div className="tier-unit">per video</div>
-                  <div className="tier-discount">-{discount}% off</div>
+                <div key={p.name} className={`tier-box ${p.name === plan.name ? "tier-active" : ""}`}>
+                  <div className="tier-range">{range} videos / mo · {p.name}</div>
+                  <div className="tier-normal-price">&euro;{p.monthly.toLocaleString()}</div>
+                  <div className="tier-price">&euro;{Math.round(getAgencyPlanPrice(p, false)).toLocaleString()}</div>
+                  <div className="tier-unit">per month for {p.videos} videos + {p.carousels} carousels, up to {p.maxSeconds + EXTRA_SECONDS}s each</div>
+                  <div className="tier-discount">{MAX_MONTHS} months: &euro;{Math.round(getAgencyPlanPrice(p, true)).toLocaleString()} / mo</div>
                 </div>
               );
             })}

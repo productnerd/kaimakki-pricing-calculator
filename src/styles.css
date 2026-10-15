@@ -604,10 +604,6 @@ body {
   gap: 8px;
 }
 
-.tiers-grid-full {
-  grid-template-columns: repeat(6, 1fr);
-}
-
 .tier-row-label {
   display: flex;
   align-items: center;
@@ -1089,10 +1085,6 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .tiers-grid-full {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
   .tiers-grid-5 {
     grid-template-columns: repeat(3, 1fr);
   }
@@ -1116,7 +1108,6 @@ body {
   }
 
   .tiers-grid,
-  .tiers-grid-full,
   .tiers-grid-5 {
     grid-template-columns: repeat(2, 1fr);
   }
