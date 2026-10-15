@@ -130,44 +130,40 @@ const TERMS_SECTIONS = [
   },
 ];
 
-const NORMAL_PRICE = 190;
+const NORMAL_PRICE = 174;
 
 const AGENCY_TIERS = [
-  { min: 1, max: 4, price: 160 },
-  { min: 5, max: 8, price: 154 },
-  { min: 9, max: 15, price: 148 },
-  { min: 16, max: 25, price: 143 },
-  { min: 26, max: 36, price: 137 },
-  { min: 37, max: 50, price: 131 },
+  { min: 1, max: 5, price: 131 },
+  { min: 6, max: 8, price: 116 },
+  { min: 9, max: 15, price: 104 },
+  { min: 16, max: 25, price: 102 },
+  { min: 26, max: 36, price: 101 },
+  { min: 37, max: 50, price: 100 },
 ];
 
 function getTierDiscount(tierIndex: number): number {
   return Math.round(((NORMAL_PRICE - AGENCY_TIERS[tierIndex].price) / NORMAL_PRICE) * 100);
 }
 
-function calculateTotal(numVideos: number) {
-  let remaining = numVideos;
-  let total = 0;
-  let normalTotal = 0;
-  const breakdown: { count: number; price: number; tierIndex: number }[] = [];
-
+function getVideoTierIndex(numVideos: number): number {
   for (let idx = 0; idx < AGENCY_TIERS.length; idx++) {
-    const tier = AGENCY_TIERS[idx];
-    if (remaining <= 0) break;
-    const tierCapacity = tier.max - tier.min + 1;
-    const videosInTier = Math.min(remaining, tierCapacity);
-    total += videosInTier * tier.price;
-    normalTotal += videosInTier * NORMAL_PRICE;
-    breakdown.push({ count: videosInTier, price: tier.price, tierIndex: idx });
-    remaining -= videosInTier;
+    if (numVideos <= AGENCY_TIERS[idx].max) return idx;
   }
-
-  return { total, normalTotal, breakdown };
+  return AGENCY_TIERS.length - 1;
 }
 
-// Discount curve for extra photos and carousels (similar shape to video tiers)
+// Flat pricing: your whole order is charged at the single rate for your volume band
+function calculateTotal(numVideos: number) {
+  const tierIndex = getVideoTierIndex(numVideos);
+  const price = AGENCY_TIERS[tierIndex].price;
+  const total = numVideos * price;
+  const normalTotal = numVideos * NORMAL_PRICE;
+  const breakdown = [{ count: numVideos, price, tierIndex }];
+  return { total, normalTotal, breakdown, price };
+}
+
+// Discount curve for extra photos (carousels are priced at half the video rate)
 const EXTRA_PHOTO_BASE = 20;
-const CAROUSEL_BASE = 50;
 
 function getExtrasDiscount(count: number): number {
   if (count <= 2) return 0;
@@ -305,10 +301,14 @@ export default function App() {
     setNumBrands((prev) => Math.min(Math.max(prev, 1), maxBrands));
   }, [maxBrands]);
   const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(numPhotos, EXTRA_PHOTO_BASE);
-  const { total: carouselsTotal, discountPct: carouselDiscountPct } = calculateExtrasTotal(numCarousels, CAROUSEL_BASE);
 
   const perWeek = postsPerMonth / 4.33;
-  const { total: baseTotal, normalTotal, breakdown } = useMemo(() => calculateTotal(numVideos), [numVideos]);
+  const { total: baseTotal, normalTotal, breakdown, price: videoPrice } = useMemo(() => calculateTotal(numVideos), [numVideos]);
+
+  // A carousel costs half a video (2 carousels = 1 video), at your own per-video rate
+  const carouselPrice = videoPrice / 2;
+  const carouselsTotal = Math.round(numCarousels * carouselPrice);
+
   const cdDiscount = creativeDirection ? 0.88 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
   const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount * filmingDiscount);
@@ -338,45 +338,48 @@ export default function App() {
       </header>
 
       <main className="main">
-        {/* Creative Direction Toggle */}
-        <section className="card card-full creative-direction-card">
-          <label className="card-label">Will you handle creative direction?</label>
-          <p className="card-note">You will be deciding what topics + formats will be executed as well as preproduction. We execute for you from that point on.</p>
-          <div className="toggle-row">
-            <button
-              className={`toggle ${creativeDirection ? "toggle-on" : ""}`}
-              onClick={() => setCreativeDirection((v) => !v)}
-              role="switch"
-              aria-checked={creativeDirection}
-            >
-              <span className="toggle-knob" />
-            </button>
-            <span className="toggle-label">
-              {creativeDirection ? "Yes — " : "No"}
-              {creativeDirection && <span className="toggle-discount">12% discount applied</span>}
-            </span>
-          </div>
-        </section>
+        {/* Discount Toggles */}
+        <div className="two-col">
+          {/* Creative Direction Toggle */}
+          <section className="card creative-direction-card">
+            <label className="card-label">Will you handle creative direction?</label>
+            <p className="card-note">You will be deciding what topics + formats will be executed as well as preproduction. We execute for you from that point on.</p>
+            <div className="toggle-row">
+              <button
+                className={`toggle ${creativeDirection ? "toggle-on" : ""}`}
+                onClick={() => setCreativeDirection((v) => !v)}
+                role="switch"
+                aria-checked={creativeDirection}
+              >
+                <span className="toggle-knob" />
+              </button>
+              <span className="toggle-label">
+                {creativeDirection ? "Yes — " : "No"}
+                {creativeDirection && <span className="toggle-discount">12% discount applied</span>}
+              </span>
+            </div>
+          </section>
 
-        {/* Filming Toggle */}
-        <section className="card card-full creative-direction-card">
-          <label className="card-label">Will you handle filming?</label>
-          <p className="card-note">You will be shooting the footage yourself. We handle the rest from that point on.</p>
-          <div className="toggle-row">
-            <button
-              className={`toggle ${handleFilming ? "toggle-on" : ""}`}
-              onClick={() => setHandleFilming((v) => !v)}
-              role="switch"
-              aria-checked={handleFilming}
-            >
-              <span className="toggle-knob" />
-            </button>
-            <span className="toggle-label">
-              {handleFilming ? "Yes — " : "No"}
-              {handleFilming && <span className="toggle-discount">25% discount applied</span>}
-            </span>
-          </div>
-        </section>
+          {/* Filming Toggle */}
+          <section className="card creative-direction-card">
+            <label className="card-label">Will you handle filming?</label>
+            <p className="card-note">You will be shooting the footage yourself. We handle the rest from that point on.</p>
+            <div className="toggle-row">
+              <button
+                className={`toggle ${handleFilming ? "toggle-on" : ""}`}
+                onClick={() => setHandleFilming((v) => !v)}
+                role="switch"
+                aria-checked={handleFilming}
+              >
+                <span className="toggle-knob" />
+              </button>
+              <span className="toggle-label">
+                {handleFilming ? "Yes — " : "No"}
+                {handleFilming && <span className="toggle-discount">25% discount applied</span>}
+              </span>
+            </div>
+          </section>
+        </div>
 
         <div className="two-col">
           {/* LEFT COLUMN — Inputs */}
@@ -426,7 +429,7 @@ export default function App() {
             {/* Carousels */}
             <section className="card">
               <label className="card-label">Carousel posts</label>
-              <p className="card-note">&euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}/carousel · up to 6 slides{numCarousels > 2 ? ` (${carouselDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">&euro;{Math.round(carouselPrice)}/carousel · up to 6 slides · half the price of a video</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -523,7 +526,7 @@ export default function App() {
             {/* Price Breakdown */}
             <section className="card">
               <h2 className="card-label">Price Breakdown</h2>
-              <p className="card-note">Pricing is progressive — each tier applies only to videos in that range</p>
+              <p className="card-note">One flat rate per video, set by your total volume — the more you order, the lower the rate</p>
 
               {/* Videos section */}
               <div className="breakdown-section">
@@ -578,8 +581,8 @@ export default function App() {
                   <div className="breakdown-list">
                     <div className="breakdown-row">
                       <span className="breakdown-desc">
-                        {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; &euro;{Math.round(CAROUSEL_BASE * (1 - carouselDiscountPct / 100))}
-                        {carouselDiscountPct > 0 && <span className="discount-badge">-{carouselDiscountPct}%</span>}
+                        {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; &euro;{Math.round(carouselPrice)}
+                        <span className="discount-badge">&frac12; video</span>
                       </span>
                       <span className="breakdown-amount">&euro;{carouselsTotal.toLocaleString()}</span>
                     </div>
@@ -728,23 +731,7 @@ export default function App() {
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
             Carousels
           </h3>
-          <p className="card-note">Priced at &euro;{CAROUSEL_BASE}/carousel (up to 6 slides each) with volume discounts</p>
-          <div className="tiers-grid tiers-grid-5">
-            {[
-              { label: "1–2", discount: 0, min: 1 },
-              { label: "3–5", discount: 5, min: 3 },
-              { label: "6–10", discount: 8, min: 6 },
-              { label: "11–20", discount: 12, min: 11 },
-              { label: "21+", discount: 15, min: 21 },
-            ].map((t) => (
-              <div key={t.label} className={`tier-box ${numCarousels >= t.min ? "tier-active" : ""}`}>
-                <div className="tier-range">{t.label} carousels</div>
-                <div className="tier-price">&euro;{Math.round(CAROUSEL_BASE * (1 - t.discount / 100))}</div>
-                <div className="tier-unit">per carousel</div>
-                {t.discount > 0 && <div className="tier-discount">-{t.discount}%</div>}
-              </div>
-            ))}
-          </div>
+          <p className="card-note">Each carousel (up to 6 slides) is priced at half your per-video rate — 2 carousels = 1 video. At your current volume that's &euro;{Math.round(carouselPrice)}/carousel.</p>
         </section>
 
 
