@@ -347,28 +347,31 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
 }
 
 export default function App() {
-  const [numVideos, setNumVideos] = useState(4);
+  // Everything is ordered per month; the months slider only sets how long they commit
+  const [videosPerMonth, setVideosPerMonth] = useState(4);
   const [months, setMonths] = useState(1);
-  const [numPhotos, setNumPhotos] = useState(0);
-  const [numCarousels, setNumCarousels] = useState(0);
+  const [photosPerMonth, setPhotosPerMonth] = useState(0);
+  const [carouselsPerMonth, setCarouselsPerMonth] = useState(0);
   const [showGif, setShowGif] = useState(false);
   const [creativeDirection, setCreativeDirection] = useState(false);
   const [handleFilming, setHandleFilming] = useState(false);
   const [numBrands, setNumBrands] = useState(1);
 
-  // Enforce the minimum pace: videos must cover MIN_PACE per brand per month
-  const maxBrands = Math.max(1, Math.floor(numVideos / (MIN_PACE * months)));
-  const maxMonths = Math.max(1, Math.min(MAX_MONTHS, Math.floor(numVideos / (MIN_PACE * numBrands))));
+  const numVideos = videosPerMonth * months;
+  const numPhotos = photosPerMonth * months;
+  const numCarousels = carouselsPerMonth * months;
 
-  // When videos drop, keep the chosen months if possible and reduce brands first
+  // Enforce the minimum pace: at least MIN_PACE videos per brand per month
+  const maxBrands = Math.max(1, Math.floor(videosPerMonth / MIN_PACE));
+
+  // When videos per month drop, reduce brands and carousels to stay within limits
   useEffect(() => {
-    const m = Math.min(months, Math.max(1, Math.floor(numVideos / MIN_PACE)));
-    const b = Math.min(Math.max(numBrands, 1), Math.max(1, Math.floor(numVideos / (MIN_PACE * m))));
-    if (m !== months) setMonths(m);
-    if (b !== numBrands) setNumBrands(b);
-  }, [numVideos, months, numBrands]);
-  const photosPerMonth = numPhotos / months / numBrands;
-  const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculatePhotosTotal(numPhotos, photosPerMonth);
+    if (numBrands > maxBrands) setNumBrands(maxBrands);
+    if (carouselsPerMonth > videosPerMonth) setCarouselsPerMonth(videosPerMonth);
+  }, [maxBrands, numBrands, carouselsPerMonth, videosPerMonth]);
+
+  const photoPace = photosPerMonth / numBrands;
+  const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculatePhotosTotal(numPhotos, photoPace);
 
   const video = useMemo(() => getLevelPricing(numVideos, numBrands, months), [numVideos, numBrands, months]);
   const carousel = useMemo(() => getLevelPricing(numCarousels, numBrands, months), [numCarousels, numBrands, months]);
@@ -430,7 +433,7 @@ export default function App() {
       ? `More carousels a month, lower price per carousel. You're at ${carousel.plan.name} level: ${eur(carouselLevelRate)} instead of ${eur(STANDARD_VIDEO_RATE / 2)}.`
       : `More carousels a month, lower price per carousel. Starts from 6 carousels a month per brand.`;
   const photoVolumeTip =
-    PHOTO_VOLUME_TIP + (photoDiscountPct > 0 ? ` You get ${photoDiscountPct}%.` : ` You're at ${photosPerMonth.toFixed(1)}.`);
+    PHOTO_VOLUME_TIP + (photoDiscountPct > 0 ? ` You get ${photoDiscountPct}%.` : ` You're at ${photoPace.toFixed(1)}.`);
   const commitmentTip =
     `${QUARTERLY_MONTHS} months: our quarterly price. ${QUARTERLY_MONTHS + 1}–${MAX_MONTHS} months: an extra ${Math.min(...longTermValues)}–${Math.max(...longTermValues)}% on top.` +
     (commitmentPct > 0 ? ` You get ${commitmentPct}% off videos and carousels.` : "");
@@ -439,8 +442,8 @@ export default function App() {
   const emailBody = [
     "Let's do this! 🎬",
     "",
-    `Here's what I put together in the calculator: ${numVideos} videos over ${months} month${months > 1 ? "s" : ""} for ${numBrands} brand${numBrands > 1 ? "s" : ""} ` +
-      `(${pace.toFixed(1)} videos per month per brand, ${plan.name} level).`,
+    `Here's what I put together in the calculator: ${videosPerMonth} videos a month for ${months} month${months > 1 ? "s" : ""} ` +
+      `(${numVideos} in total) for ${numBrands} brand${numBrands > 1 ? "s" : ""}, ${pace.toFixed(1)} videos per month per brand, ${plan.name} level.`,
     "",
     asciiTable([
       ["Item", "Amount"],
@@ -527,40 +530,40 @@ export default function App() {
           <div className="col-left">
             {/* Video Count */}
             <section className="card">
-              <label className="card-label">How many videos do you need?</label>
+              <label className="card-label">How many videos per month?</label>
               <p className="card-note">Up to {plan.maxSeconds + EXTRA_SECONDS} seconds each at your posting pace</p>
               <div className="slider-row">
                 <input
                   type="range"
                   min={MIN_VIDEOS}
                   max={MAX_VIDEOS}
-                  value={numVideos}
-                  onChange={(e) => setNumVideos(Number(e.target.value))}
+                  value={videosPerMonth}
+                  onChange={(e) => setVideosPerMonth(Number(e.target.value))}
                   className="slider"
                 />
-                <div className="slider-value">{numVideos}</div>
+                <div className="slider-value">{videosPerMonth}</div>
               </div>
               <div className="slider-hints">
-                <span>4</span>
-                <span>50</span>
+                <span>{MIN_VIDEOS}</span>
+                <span>{MAX_VIDEOS}</span>
               </div>
             </section>
 
 
             {/* Photo Posts */}
             <section className="card">
-              <label className="card-label">Photo posts</label>
+              <label className="card-label">Photo posts per month</label>
               <p className="card-note">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post{photoDiscountPct > 0 ? ` (${photoDiscountPct}% volume discount)` : ""} <InfoTip text={PHOTO_VOLUME_TIP} /></p>
               <div className="slider-row">
                 <input
                   type="range"
                   min={0}
                   max={100}
-                  value={numPhotos}
-                  onChange={(e) => setNumPhotos(Number(e.target.value))}
+                  value={photosPerMonth}
+                  onChange={(e) => setPhotosPerMonth(Number(e.target.value))}
                   className="slider"
                 />
-                <div className="slider-value">{numPhotos}</div>
+                <div className="slider-value">{photosPerMonth}</div>
               </div>
               <div className="slider-hints">
                 <span>0</span>
@@ -570,22 +573,22 @@ export default function App() {
 
             {/* Carousels */}
             <section className="card">
-              <label className="card-label">Carousel posts</label>
+              <label className="card-label">Carousel posts per month</label>
               <p className="card-note">&euro;{Math.round(carouselRate)}/carousel · up to 6 slides · cheaper from 6 a month per brand</p>
               <div className="slider-row">
                 <input
                   type="range"
                   min={0}
-                  max={numVideos}
-                  value={numCarousels}
-                  onChange={(e) => setNumCarousels(Number(e.target.value))}
+                  max={videosPerMonth}
+                  value={carouselsPerMonth}
+                  onChange={(e) => setCarouselsPerMonth(Number(e.target.value))}
                   className="slider"
                 />
-                <div className="slider-value">{numCarousels}</div>
+                <div className="slider-value">{carouselsPerMonth}</div>
               </div>
               <div className="slider-hints">
                 <span>0</span>
-                <span>{numVideos}</span>
+                <span>{videosPerMonth}</span>
               </div>
             </section>
 
@@ -595,13 +598,13 @@ export default function App() {
           <div className="col-right">
             {/* Frequency + Stats */}
             <section className="card">
-              <label className="card-label">Over how many months will you post these?</label>
+              <label className="card-label">For how many months?</label>
               <p className="card-note">Your posting pace sets your plan level (minimum {MIN_PACE} videos per brand per month). Commit to {QUARTERLY_MONTHS} months for our quarterly rate, and up to {MAX_MONTHS} months for an extra {LONG_TERM_DISCOUNTS[MAX_MONTHS]}% off</p>
               <div className="slider-row">
                 <input
                   type="range"
                   min={1}
-                  max={maxMonths}
+                  max={MAX_MONTHS}
                   value={months}
                   onChange={(e) => setMonths(Number(e.target.value))}
                   className="slider"
@@ -610,7 +613,7 @@ export default function App() {
               </div>
               <div className="slider-hints">
                 <span>1 month</span>
-                <span>{maxMonths} month{maxMonths > 1 ? "s" : ""}</span>
+                <span>{MAX_MONTHS} months</span>
               </div>
 
               <label className="card-label" style={{ marginTop: "24px" }}>How many brands will you use these for?</label>
@@ -635,18 +638,18 @@ export default function App() {
                 <div className="stat-box">
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
                   <div className="stat-number">{numVideos}</div>
-                  <div className="stat-label">Short-form Videos</div>
+                  <div className="stat-label">Short-form Videos in Total</div>
                 </div>
                 <div className="stat-box">
                   <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
                   <div className="stat-number">{numPhotos}</div>
-                  <div className="stat-label">Photo Posts</div>
+                  <div className="stat-label">Photo Posts in Total</div>
                 </div>
                 {numCarousels > 0 && (
                   <div className="stat-box">
                     <svg className="stat-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
                     <div className="stat-number">{numCarousels}</div>
-                    <div className="stat-label">Carousels</div>
+                    <div className="stat-label">Carousels in Total</div>
                   </div>
                 )}
                 <div className="stat-box">
@@ -838,7 +841,7 @@ export default function App() {
           <p className="card-note">Each photo post is a complete post with caption, concept and design — not just a raw photo. Priced at &euro;{EXTRA_PHOTO_BASE}/post, cheaper the more you post per month for each brand</p>
           <div className="tiers-grid tiers-grid-4">
             {PHOTO_TIERS.map((t) => (
-              <div key={t.label} className={`tier-box ${numPhotos > 0 && photosPerMonth >= t.min ? "tier-active" : ""}`}>
+              <div key={t.label} className={`tier-box ${numPhotos > 0 && photoPace >= t.min ? "tier-active" : ""}`}>
                 <div className="tier-range">{t.label} photos / mo</div>
                 <div className="tier-price">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - t.discount / 100))}</div>
                 <div className="tier-unit">per photo post</div>
