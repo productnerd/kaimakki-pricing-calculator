@@ -520,6 +520,19 @@ body {
   font-weight: 800;
 }
 
+.savings-sub {
+  margin-left: 16px;
+  margin-top: 0;
+  padding: 4px 12px;
+  background: transparent;
+  font-weight: 500;
+}
+
+.savings-sub .savings-amount {
+  font-size: 13px;
+  font-weight: 700;
+}
+
 /* Info tooltips: the bubble spans the row it sits in, so it never runs off the card */
 .savings-row,
 .toggle-row,

@@ -169,19 +169,22 @@ function getLevelRate(plan: (typeof PLANS)[number], pace: number): number {
   return Math.min(STANDARD_VIDEO_RATE, plan.monthly / (Math.min(pace, plan.videos) + plan.carousels / 2));
 }
 
-function getPricing(numVideos: number, numBrands: number, months: number) {
-  const pace = numVideos / numBrands / months;
+// Volume level and commitment for items posted per month per brand. Videos and carousels each
+// unlock levels by their own count; a carousel then costs half a video at its level.
+function getLevelPricing(count: number, numBrands: number, months: number) {
+  const pace = count / numBrands / months;
   const plan = getPlanLevel(pace);
-  const quarterly = months >= QUARTERLY_MONTHS;
+  // Commitment: our quarterly price from 3 months, plus a little extra for 4-6 months
+  const quarterlyFactor = months >= QUARTERLY_MONTHS ? plan.quarterly / plan.monthly : 1;
   return {
     pace,
     plan,
     levelRate: getLevelRate(plan, pace),
-    quarterlyFactor: quarterly ? plan.quarterly / plan.monthly : 1,
-    longTermPct: LONG_TERM_DISCOUNTS[months] ?? 0,
+    commitmentFactor: quarterlyFactor * (1 - (LONG_TERM_DISCOUNTS[months] ?? 0) / 100),
   };
 }
 
+const VOLUME_TIP = "Videos, carousels and photos each get cheaper the more of them you post per month per brand.";
 const CREATIVE_DIRECTION_TIP = "You handle topics, formats and pre-production: 12% off.";
 const FILMING_TIP = "You shoot the footage, we do the rest: 25% off.";
 
@@ -206,9 +209,9 @@ function InfoTip({ text }: { text: string }) {
   );
 }
 
-function DiscountRow({ label, tip, amount }: { label: string; tip: string; amount: number }) {
+function DiscountRow({ label, tip, amount, sub }: { label: string; tip: string; amount: number; sub?: boolean }) {
   return (
-    <div className="savings-row">
+    <div className={`savings-row${sub ? " savings-sub" : ""}`}>
       <span>
         {label} <InfoTip text={tip} />
       </span>
@@ -363,13 +366,11 @@ export default function App() {
   const photosPerMonth = numPhotos / months / numBrands;
   const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculatePhotosTotal(numPhotos, photosPerMonth);
 
-  const { pace, plan, levelRate, quarterlyFactor, longTermPct } = useMemo(
-    () => getPricing(numVideos, numBrands, months),
-    [numVideos, numBrands, months]
-  );
-
-  // A carousel counts as half a video (2 carousels = 1 video)
-  const videoUnits = numVideos + numCarousels / 2;
+  const video = useMemo(() => getLevelPricing(numVideos, numBrands, months), [numVideos, numBrands, months]);
+  const carousel = useMemo(() => getLevelPricing(numCarousels, numBrands, months), [numCarousels, numBrands, months]);
+  const { pace, plan, levelRate } = video;
+  // A carousel costs half a video at the level its own count unlocks (2 carousels = 1 video)
+  const carouselLevelRate = carousel.levelRate / 2;
 
   // The receipt: everything at our standard rates, then each discount in turn
   const videosStandard = numVideos * STANDARD_VIDEO_RATE;
@@ -377,10 +378,11 @@ export default function App() {
   const photosStandard = numPhotos * EXTRA_PHOTO_BASE;
   const standardTotal = Math.round(videosStandard + carouselsStandard + photosStandard);
 
-  const afterVolume = videoUnits * levelRate + numPhotosTotal;
-  // Commitment: our quarterly price from 3 months, plus a little extra for 4-6 months (videos and carousels)
-  const commitmentFactor = quarterlyFactor * (1 - longTermPct / 100);
-  const commitmentSavings = videoUnits * levelRate * (1 - commitmentFactor);
+  const videosAfterVolume = numVideos * levelRate;
+  const carouselsAfterVolume = numCarousels * carouselLevelRate;
+  const afterVolume = videosAfterVolume + carouselsAfterVolume + numPhotosTotal;
+  const commitmentSavings =
+    videosAfterVolume * (1 - video.commitmentFactor) + carouselsAfterVolume * (1 - carousel.commitmentFactor);
   const afterCommitment = afterVolume - commitmentSavings;
   const agencyFactor = 1 - AGENCY_DISCOUNT_PCT / 100;
   const afterAgency = afterCommitment * agencyFactor;
@@ -388,23 +390,25 @@ export default function App() {
   const cdDiscount = creativeDirection ? 0.88 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
 
-  // Volume discount is videos and carousels only (Growth level and up); photos have their own volume discount
-  const volumeLine = Math.round(videoUnits * (STANDARD_VIDEO_RATE - levelRate));
+  // Videos, carousels and photos each get their own volume discount, set by their own monthly count
+  const volumeLine = Math.round(videosStandard - videosAfterVolume);
+  const carouselVolumeLine = Math.round(carouselsStandard - carouselsAfterVolume);
   const photoVolumeLine = photosStandard - numPhotosTotal;
+  const totalVolumeLine = volumeLine + carouselVolumeLine + photoVolumeLine;
   const commitmentLine = Math.round(commitmentSavings);
   const agencyLine = Math.round(afterCommitment - afterAgency);
   const cdLine = Math.round(afterAgency * (1 - cdDiscount));
   const filmingLine = Math.round(afterAgency * cdDiscount * (1 - filmingDiscount));
   // The total is the receipt itself, so the lines always add up exactly
-  const total = standardTotal - volumeLine - photoVolumeLine - commitmentLine - agencyLine - cdLine - filmingLine;
+  const total = standardTotal - totalVolumeLine - commitmentLine - agencyLine - cdLine - filmingLine;
   const perMonth = Math.round(total / months);
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
 
   // What you pay per item after volume, commitment and agency discounts (before the toggles)
-  const videoRate = levelRate * commitmentFactor * agencyFactor;
-  const carouselRate = videoRate / 2;
+  const videoRate = levelRate * video.commitmentFactor * agencyFactor;
+  const carouselRate = carouselLevelRate * carousel.commitmentFactor * agencyFactor;
   const photoRate = numPhotos > 0 ? (numPhotosTotal / numPhotos) * agencyFactor : 0;
 
   const avgPrice = videoRate;
@@ -412,11 +416,15 @@ export default function App() {
   const toggleDiscountActive = creativeDirection || handleFilming;
 
   const longTermValues = Object.values(LONG_TERM_DISCOUNTS);
-  const commitmentPct = Math.round((1 - commitmentFactor) * 100);
+  const commitmentPct = Math.round((1 - video.commitmentFactor) * 100);
   const volumeTip =
     volumeLine > 0
       ? `More videos a month, lower price per video. You're at ${plan.name} level: ${eur(levelRate)} instead of ${eur(STANDARD_VIDEO_RATE)}.`
       : `More videos a month, lower price per video. Starts from 6 videos a month per brand.`;
+  const carouselVolumeTip =
+    carouselVolumeLine > 0
+      ? `More carousels a month, lower price per carousel. You're at ${carousel.plan.name} level: ${eur(carouselLevelRate)} instead of ${eur(STANDARD_VIDEO_RATE / 2)}.`
+      : `More carousels a month, lower price per carousel. Starts from 6 carousels a month per brand.`;
   const photoVolumeTip =
     PHOTO_VOLUME_TIP + (photoDiscountPct > 0 ? ` You get ${photoDiscountPct}%.` : ` You're at ${photosPerMonth.toFixed(1)}.`);
   const commitmentTip =
@@ -438,8 +446,10 @@ export default function App() {
       ...(numPhotos > 0 ? [[`${numPhotos} photo posts x ${eur(EXTRA_PHOTO_BASE)}`, eur(photosStandard)] as [string, string]] : []),
       null,
       ["Standard price", eur(standardTotal)],
-      ["Volume discount", `-${eur(volumeLine)}`],
-      ...(numPhotos > 0 ? [["Photo volume discount", `-${eur(photoVolumeLine)}`] as [string, string]] : []),
+      ["Volume discount", `-${eur(totalVolumeLine)}`],
+      ...(volumeLine > 0 ? [["  videos", `-${eur(volumeLine)}`] as [string, string]] : []),
+      ...(carouselVolumeLine > 0 ? [["  carousels", `-${eur(carouselVolumeLine)}`] as [string, string]] : []),
+      ...(photoVolumeLine > 0 ? [["  photos", `-${eur(photoVolumeLine)}`] as [string, string]] : []),
       ["Long-term commitment discount", `-${eur(commitmentLine)}`],
       [`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`],
       ...(creativeDirection ? [["Creative direction discount (12%)", `-${eur(cdLine)}`] as [string, string]] : []),
@@ -557,7 +567,7 @@ export default function App() {
             {/* Carousels */}
             <section className="card">
               <label className="card-label">Carousel posts</label>
-              <p className="card-note">&euro;{Math.round(carouselRate)}/carousel · up to 6 slides · half the price of a video</p>
+              <p className="card-note">&euro;{Math.round(carouselRate)}/carousel · up to 6 slides · cheaper from 6 a month per brand</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -730,8 +740,10 @@ export default function App() {
                   <span>Standard price</span>
                   <span>{eur(standardTotal)}</span>
                 </div>
-                <DiscountRow label="Volume discount" tip={volumeTip} amount={volumeLine} />
-                {numPhotos > 0 && <DiscountRow label="Photo volume discount" tip={photoVolumeTip} amount={photoVolumeLine} />}
+                <DiscountRow label="Volume discount" tip={VOLUME_TIP} amount={totalVolumeLine} />
+                {volumeLine > 0 && <DiscountRow sub label="Videos" tip={volumeTip} amount={volumeLine} />}
+                {carouselVolumeLine > 0 && <DiscountRow sub label="Carousels" tip={carouselVolumeTip} amount={carouselVolumeLine} />}
+                {photoVolumeLine > 0 && <DiscountRow sub label="Photos" tip={photoVolumeTip} amount={photoVolumeLine} />}
                 <DiscountRow label="Long-term commitment discount" tip={commitmentTip} amount={commitmentLine} />
                 <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />
                 {creativeDirection && <DiscountRow label="Creative direction discount (12%)" tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
@@ -835,15 +847,15 @@ export default function App() {
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
             Carousels
           </h3>
-          <p className="card-note">Each carousel (up to 6 slides) costs half a video at the same plan level: 2 carousels = 1 video</p>
+          <p className="card-note">Each carousel (up to 6 slides) costs half a video. The more carousels you post per month per brand, the cheaper they get</p>
           <div className="tiers-grid">
             {PLANS.map((p, i) => {
-              const from = i === 0 ? MIN_PACE : PLANS[i - 1].videos + 1;
-              const range = i === PLANS.length - 1 ? `${from}+` : from === p.videos ? `${from}` : `${from}–${p.videos}`;
+              const from = i === 0 ? 1 : PLANS[i - 1].videos + 1;
+              const range = i === PLANS.length - 1 ? `${from}+` : `${from}–${p.videos}`;
               const carouselPlanRate = getLevelRate(p, p.videos) / 2;
               return (
-                <div key={p.name} className={`tier-box ${p.name === plan.name ? "tier-active" : ""}`}>
-                  <div className="tier-range">{range} videos / mo · {p.name}</div>
+                <div key={p.name} className={`tier-box ${numCarousels > 0 && p.name === carousel.plan.name ? "tier-active" : ""}`}>
+                  <div className="tier-range">{range} carousels / mo</div>
                   <div className="tier-normal-price">{eur(carouselPlanRate)}</div>
                   <div className="tier-price">{eur(carouselPlanRate * agencyFactor)}</div>
                   <div className="tier-unit">per carousel</div>
