@@ -253,6 +253,7 @@ function calculatePhotosTotal(numPhotos: number, photosPerMonth: number): { tota
 
 const MIN_VIDEOS = 4;
 const MAX_VIDEOS = 50;
+const MAX_PHOTOS = 100;
 const MAX_PER_WEEK = 3;
 
 function TermsAccordion() {
@@ -346,16 +347,51 @@ function AccordionItem({ stage }: { stage: typeof PRODUCTION_STAGES[number] }) {
   );
 }
 
+// The calculator's state lives in the URL, so any link reproduces the exact quote
+const initialParams = new URLSearchParams(window.location.search);
+
+function readNumberParam(key: string, min: number, max: number, fallback: number): number {
+  const value = Number(initialParams.get(key));
+  return initialParams.has(key) && Number.isFinite(value) ? Math.min(max, Math.max(min, Math.round(value))) : fallback;
+}
+
 export default function App() {
   // Everything is ordered per month; the months slider only sets how long they commit
-  const [videosPerMonth, setVideosPerMonth] = useState(4);
-  const [months, setMonths] = useState(1);
-  const [photosPerMonth, setPhotosPerMonth] = useState(0);
-  const [carouselsPerMonth, setCarouselsPerMonth] = useState(0);
+  const [videosPerMonth, setVideosPerMonth] = useState(() => readNumberParam("v", MIN_VIDEOS, MAX_VIDEOS, 4));
+  const [months, setMonths] = useState(() => readNumberParam("m", 1, MAX_MONTHS, 1));
+  const [photosPerMonth, setPhotosPerMonth] = useState(() => readNumberParam("p", 0, MAX_PHOTOS, 0));
+  const [carouselsPerMonth, setCarouselsPerMonth] = useState(() => readNumberParam("c", 0, MAX_VIDEOS, 0));
   const [showGif, setShowGif] = useState(false);
-  const [creativeDirection, setCreativeDirection] = useState(false);
-  const [handleFilming, setHandleFilming] = useState(false);
-  const [numBrands, setNumBrands] = useState(1);
+  const [creativeDirection, setCreativeDirection] = useState(() => initialParams.get("cd") === "1");
+  const [handleFilming, setHandleFilming] = useState(() => initialParams.get("f") === "1");
+  const [numBrands, setNumBrands] = useState(() => readNumberParam("b", 1, MAX_VIDEOS, 1));
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const shareParams = new URLSearchParams({
+    v: String(videosPerMonth),
+    m: String(months),
+    b: String(numBrands),
+    c: String(carouselsPerMonth),
+    p: String(photosPerMonth),
+  });
+  if (creativeDirection) shareParams.set("cd", "1");
+  if (handleFilming) shareParams.set("f", "1");
+  const shareUrl = `${window.location.origin}${window.location.pathname}?${shareParams}`;
+
+  // Keep the address bar in sync so copying it also copies the quote
+  useEffect(() => {
+    window.history.replaceState(null, "", shareUrl);
+  }, [shareUrl]);
+
+  async function copyShareLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      window.prompt("Copy this link to share the quote:", shareUrl);
+    }
+  }
 
   const numVideos = videosPerMonth * months;
   const numPhotos = photosPerMonth * months;
@@ -466,6 +502,8 @@ export default function App() {
       [`Per month (${months} month${months > 1 ? "s" : ""})`, eur(perMonth)],
     ]),
     "",
+    `See it in the calculator: ${shareUrl}`,
+    "",
   ].join("\n");
 
   return (
@@ -558,7 +596,7 @@ export default function App() {
                 <input
                   type="range"
                   min={0}
-                  max={100}
+                  max={MAX_PHOTOS}
                   value={photosPerMonth}
                   onChange={(e) => setPhotosPerMonth(Number(e.target.value))}
                   className="slider"
@@ -567,7 +605,7 @@ export default function App() {
               </div>
               <div className="slider-hints">
                 <span>0</span>
-                <span>100</span>
+                <span>{MAX_PHOTOS}</span>
               </div>
             </section>
 
@@ -763,6 +801,9 @@ export default function App() {
                   <span>Per month{months > 1 ? ` (over ${months} months)` : ""}</span>
                   <span>{eur(perMonth)}</span>
                 </div>
+                <button className="share-btn" onClick={copyShareLink}>
+                  {linkCopied ? "Link copied!" : "Copy link to this quote"}
+                </button>
               </div>
 
               <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks</h2>

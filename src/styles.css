@@ -520,6 +520,24 @@ body {
   font-weight: 800;
 }
 
+.share-btn {
+  margin-top: 8px;
+  padding: 10px 14px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--accent-green);
+  background: transparent;
+  border: 1px solid var(--accent-green);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.share-btn:hover {
+  background: var(--accent-green-dim);
+}
+
 .savings-sub {
   margin-left: 16px;
   margin-top: 0;
