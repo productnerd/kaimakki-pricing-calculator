@@ -668,8 +668,8 @@ body {
   margin-top: 8px;
 }
 
-.tiers-grid-5 {
-  grid-template-columns: repeat(5, 1fr);
+.tiers-grid-4 {
+  grid-template-columns: repeat(4, 1fr);
 }
 
 .tier-box {
@@ -1133,10 +1133,6 @@ body {
     grid-template-columns: 1fr;
   }
 
-  .tiers-grid-5 {
-    grid-template-columns: repeat(3, 1fr);
-  }
-
   .stats-grid-full {
     grid-template-columns: 1fr 1fr;
   }
@@ -1156,7 +1152,7 @@ body {
   }
 
   .tiers-grid,
-  .tiers-grid-5 {
+  .tiers-grid-4 {
     grid-template-columns: repeat(2, 1fr);
   }
 

@@ -139,7 +139,10 @@ const PLANS = [
 ];
 const AGENCY_DISCOUNT_PCT = 10;
 const EXTRA_SECONDS = 5; // agency videos may run this much longer than the matching plan allows
-const MAX_MONTHS = 3; // committing to 3 months unlocks our quarterly price
+const QUARTERLY_MONTHS = 3; // committing to 3 months unlocks our quarterly price
+const MAX_MONTHS = 6;
+// Extra discount on top of the quarterly price for committing longer (months → %)
+const LONG_TERM_DISCOUNTS: Record<number, number> = { 4: 2, 5: 3, 6: 5 };
 
 // Minimum posting pace: at least this many videos per brand per month
 const MIN_PACE = 4;
@@ -169,25 +172,18 @@ function getLevelRate(plan: (typeof PLANS)[number], pace: number): number {
 function getPricing(numVideos: number, numBrands: number, months: number) {
   const pace = numVideos / numBrands / months;
   const plan = getPlanLevel(pace);
-  const quarterly = months >= MAX_MONTHS;
+  const quarterly = months >= QUARTERLY_MONTHS;
   return {
     pace,
     plan,
-    quarterly,
     levelRate: getLevelRate(plan, pace),
     quarterlyFactor: quarterly ? plan.quarterly / plan.monthly : 1,
+    longTermPct: LONG_TERM_DISCOUNTS[months] ?? 0,
   };
 }
 
-function getQuarterlyPct(plan: (typeof PLANS)[number]): number {
-  return Math.round((1 - plan.quarterly / plan.monthly) * 100);
-}
-
-const PHOTO_VOLUME_TIP =
-  "Photo posts get cheaper the more you order: 5% off from 3, 8% off from 6, 12% off from 11 and 15% off from 21.";
-const CREATIVE_DIRECTION_TIP =
-  "You decide the topics and formats and handle pre-production, and we execute from there, so we take 12% off.";
-const FILMING_TIP = "You shoot the footage yourselves and we handle the rest, so we take 25% off.";
+const CREATIVE_DIRECTION_TIP = "You handle topics, formats and pre-production: 12% off.";
+const FILMING_TIP = "You shoot the footage, we do the rest: 25% off.";
 
 function eur(amount: number): string {
   return `€${Math.round(amount).toLocaleString()}`;
@@ -221,21 +217,31 @@ function DiscountRow({ label, tip, amount }: { label: string; tip: string; amoun
   );
 }
 
-// Discount curve for extra photos (carousels are priced at half the video rate)
+// Photo posts (carousels are priced at half the video rate)
 const EXTRA_PHOTO_BASE = 20;
 
-function getExtrasDiscount(count: number): number {
-  if (count <= 2) return 0;
-  if (count <= 5) return 5;
-  if (count <= 10) return 8;
-  if (count <= 20) return 12;
-  return 15;
+// Photo volume discount by photos per month per brand: like videos, none at a Starter-sized pace
+const PHOTO_TIERS = [
+  { label: "1–5", min: 1, discount: 0 },
+  { label: "6–10", min: 6, discount: 8 },
+  { label: "11–20", min: 11, discount: 12 },
+  { label: "21+", min: 21, discount: 15 },
+];
+
+const PHOTO_VOLUME_TIP =
+  "Photos per brand per month: " +
+  PHOTO_TIERS.filter((t) => t.discount > 0)
+    .map((t) => `${t.discount}% off from ${t.min}`)
+    .join(", ") +
+  ".";
+
+function getPhotoDiscount(photosPerMonth: number): number {
+  return [...PHOTO_TIERS].reverse().find((t) => photosPerMonth >= t.min)?.discount ?? 0;
 }
 
-function calculateExtrasTotal(count: number, basePrice: number): { total: number; discountPct: number } {
-  const discountPct = getExtrasDiscount(count);
-  const discountedPrice = basePrice * (1 - discountPct / 100);
-  return { total: Math.round(count * discountedPrice), discountPct };
+function calculatePhotosTotal(numPhotos: number, photosPerMonth: number): { total: number; discountPct: number } {
+  const discountPct = getPhotoDiscount(photosPerMonth);
+  return { total: Math.round(numPhotos * EXTRA_PHOTO_BASE * (1 - discountPct / 100)), discountPct };
 }
 
 const MIN_VIDEOS = 4;
@@ -354,9 +360,10 @@ export default function App() {
     if (m !== months) setMonths(m);
     if (b !== numBrands) setNumBrands(b);
   }, [numVideos, months, numBrands]);
-  const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(numPhotos, EXTRA_PHOTO_BASE);
+  const photosPerMonth = numPhotos / months / numBrands;
+  const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculatePhotosTotal(numPhotos, photosPerMonth);
 
-  const { pace, plan, quarterly, levelRate, quarterlyFactor } = useMemo(
+  const { pace, plan, levelRate, quarterlyFactor, longTermPct } = useMemo(
     () => getPricing(numVideos, numBrands, months),
     [numVideos, numBrands, months]
   );
@@ -371,10 +378,12 @@ export default function App() {
   const standardTotal = Math.round(videosStandard + carouselsStandard + photosStandard);
 
   const afterVolume = videoUnits * levelRate + numPhotosTotal;
-  const quarterlySavings = videoUnits * levelRate * (1 - quarterlyFactor);
-  const afterQuarterly = afterVolume - quarterlySavings;
+  // Commitment: our quarterly price from 3 months, plus a little extra for 4-6 months (videos and carousels)
+  const commitmentFactor = quarterlyFactor * (1 - longTermPct / 100);
+  const commitmentSavings = videoUnits * levelRate * (1 - commitmentFactor);
+  const afterCommitment = afterVolume - commitmentSavings;
   const agencyFactor = 1 - AGENCY_DISCOUNT_PCT / 100;
-  const afterAgency = afterQuarterly * agencyFactor;
+  const afterAgency = afterCommitment * agencyFactor;
 
   const cdDiscount = creativeDirection ? 0.88 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
@@ -382,19 +391,19 @@ export default function App() {
   // Volume discount is videos and carousels only (Growth level and up); photos have their own volume discount
   const volumeLine = Math.round(videoUnits * (STANDARD_VIDEO_RATE - levelRate));
   const photoVolumeLine = photosStandard - numPhotosTotal;
-  const quarterlyLine = Math.round(quarterlySavings);
-  const agencyLine = Math.round(afterQuarterly - afterAgency);
+  const commitmentLine = Math.round(commitmentSavings);
+  const agencyLine = Math.round(afterCommitment - afterAgency);
   const cdLine = Math.round(afterAgency * (1 - cdDiscount));
   const filmingLine = Math.round(afterAgency * cdDiscount * (1 - filmingDiscount));
   // The total is the receipt itself, so the lines always add up exactly
-  const total = standardTotal - volumeLine - photoVolumeLine - quarterlyLine - agencyLine - cdLine - filmingLine;
+  const total = standardTotal - volumeLine - photoVolumeLine - commitmentLine - agencyLine - cdLine - filmingLine;
   const perMonth = Math.round(total / months);
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
 
-  // What you pay per item after volume, quarterly and agency discounts (before the toggles)
-  const videoRate = levelRate * quarterlyFactor * agencyFactor;
+  // What you pay per item after volume, commitment and agency discounts (before the toggles)
+  const videoRate = levelRate * commitmentFactor * agencyFactor;
   const carouselRate = videoRate / 2;
   const photoRate = numPhotos > 0 ? (numPhotosTotal / numPhotos) * agencyFactor : 0;
 
@@ -402,17 +411,18 @@ export default function App() {
   const avgPriceDiscounted = avgPrice * cdDiscount * filmingDiscount;
   const toggleDiscountActive = creativeDirection || handleFilming;
 
-  const quarterlyPct = getQuarterlyPct(plan);
+  const longTermValues = Object.values(LONG_TERM_DISCOUNTS);
+  const commitmentPct = Math.round((1 - commitmentFactor) * 100);
   const volumeTip =
-    `Our standard rate is ${eur(STANDARD_VIDEO_RATE)} per video (our Starter plan's monthly price per video; a carousel counts as half a video). ` +
-    `From our Growth level up, posting more videos per month costs less per video. ` +
-    `At ${pace.toFixed(1)} videos per month per brand you're on our ${plan.name} level: ${eur(levelRate)} per video` +
-    (volumeLine > 0 ? "." : ", so no volume discount yet.");
-  const photoVolumeTip = `${PHOTO_VOLUME_TIP} You're ordering ${numPhotos}, so ${photoDiscountPct}% off.`;
-  const quarterlyTip = quarterly
-    ? `You're committing to ${MAX_MONTHS} months, so you get our quarterly plan price instead of monthly: ${quarterlyPct}% less on videos and carousels at the ${plan.name} level.`
-    : `Commit to ${MAX_MONTHS} months to get our quarterly plan price instead of monthly: ${quarterlyPct}% less on videos and carousels at the ${plan.name} level.`;
-  const agencyTip = `As an agency you get ${AGENCY_DISCOUNT_PCT}% off everything (videos, carousels and photos) compared with what our own clients pay on our plans.`;
+    volumeLine > 0
+      ? `More videos a month, lower price per video. You're at ${plan.name} level: ${eur(levelRate)} instead of ${eur(STANDARD_VIDEO_RATE)}.`
+      : `More videos a month, lower price per video. Starts from 6 videos a month per brand.`;
+  const photoVolumeTip =
+    PHOTO_VOLUME_TIP + (photoDiscountPct > 0 ? ` You get ${photoDiscountPct}%.` : ` You're at ${photosPerMonth.toFixed(1)}.`);
+  const commitmentTip =
+    `${QUARTERLY_MONTHS} months: our quarterly price. ${QUARTERLY_MONTHS + 1}–${MAX_MONTHS} months: an extra ${Math.min(...longTermValues)}–${Math.max(...longTermValues)}% on top.` +
+    (commitmentPct > 0 ? ` You get ${commitmentPct}% off videos and carousels.` : "");
+  const agencyTip = `${AGENCY_DISCOUNT_PCT}% off everything, compared with our client prices.`;
 
   const emailBody = [
     "Let's do this! 🎬",
@@ -430,7 +440,7 @@ export default function App() {
       ["Standard price", eur(standardTotal)],
       ["Volume discount", `-${eur(volumeLine)}`],
       ...(numPhotos > 0 ? [["Photo volume discount", `-${eur(photoVolumeLine)}`] as [string, string]] : []),
-      ["Quarterly plan discount", `-${eur(quarterlyLine)}`],
+      ["Long-term commitment discount", `-${eur(commitmentLine)}`],
       [`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`],
       ...(creativeDirection ? [["Creative direction discount (12%)", `-${eur(cdLine)}`] as [string, string]] : []),
       ...(handleFilming ? [["Filming discount (25%)", `-${eur(filmingLine)}`] as [string, string]] : []),
@@ -449,7 +459,7 @@ export default function App() {
           <img src={logo} alt="Kaimakki" className="logo-img" />
         </a>
         <p className="subtitle">Agency Pricing Calculator</p>
-        <p className="header-note">These videos can be used for multiple of your accounts but the minimum is 4 videos per account per month. All content must be posted within three months of purchase.</p>
+        <p className="header-note">These videos can be used for multiple of your accounts but the minimum is 4 videos per account per month. All content must be posted within the period you choose (up to six months).</p>
       </header>
 
       <main className="main">
@@ -526,7 +536,7 @@ export default function App() {
             {/* Photo Posts */}
             <section className="card">
               <label className="card-label">Photo posts</label>
-              <p className="card-note">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post{numPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""} <InfoTip text={PHOTO_VOLUME_TIP} /></p>
+              <p className="card-note">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post{photoDiscountPct > 0 ? ` (${photoDiscountPct}% volume discount)` : ""} <InfoTip text={PHOTO_VOLUME_TIP} /></p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -572,7 +582,7 @@ export default function App() {
             {/* Frequency + Stats */}
             <section className="card">
               <label className="card-label">Over how many months will you post these?</label>
-              <p className="card-note">Your posting pace sets your plan level (minimum {MIN_PACE} videos per brand per month). Commit to {MAX_MONTHS} months to get our quarterly rate</p>
+              <p className="card-note">Your posting pace sets your plan level (minimum {MIN_PACE} videos per brand per month). Commit to {QUARTERLY_MONTHS} months for our quarterly rate, and up to {MAX_MONTHS} months for an extra {LONG_TERM_DISCOUNTS[MAX_MONTHS]}% off</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -722,7 +732,7 @@ export default function App() {
                 </div>
                 <DiscountRow label="Volume discount" tip={volumeTip} amount={volumeLine} />
                 {numPhotos > 0 && <DiscountRow label="Photo volume discount" tip={photoVolumeTip} amount={photoVolumeLine} />}
-                <DiscountRow label="Quarterly plan discount" tip={quarterlyTip} amount={quarterlyLine} />
+                <DiscountRow label="Long-term commitment discount" tip={commitmentTip} amount={commitmentLine} />
                 <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />
                 {creativeDirection && <DiscountRow label="Creative direction discount (12%)" tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
                 {handleFilming && <DiscountRow label="Filming discount (25%)" tip={FILMING_TIP} amount={filmingLine} />}
@@ -782,7 +792,7 @@ export default function App() {
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
           <h2 className="card-label">Agency Pricing</h2>
-          <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {MAX_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price. Highlighted is your level. <InfoTip text={`Struck-through prices are what our own clients pay on our monthly plans. The big price is your agency price, ${AGENCY_DISCOUNT_PCT}% less. The ${MAX_MONTHS}-month price starts from our quarterly plan price instead.`} /></p>
+          <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {QUARTERLY_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level. <InfoTip text={`Struck through: our client price. Big number: your agency price (${AGENCY_DISCOUNT_PCT}% less).`} /></p>
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
@@ -798,7 +808,8 @@ export default function App() {
                   <div className="tier-normal-price">&euro;{p.monthly.toLocaleString()}</div>
                   <div className="tier-price">&euro;{Math.round(getAgencyPlanPrice(p, false)).toLocaleString()}</div>
                   <div className="tier-unit">per month for {p.videos} videos + {p.carousels} carousels, up to {p.maxSeconds + EXTRA_SECONDS}s each</div>
-                  <div className="tier-discount">{MAX_MONTHS} months: &euro;{Math.round(getAgencyPlanPrice(p, true)).toLocaleString()} / mo</div>
+                  <div className="tier-discount">{QUARTERLY_MONTHS} months: &euro;{Math.round(getAgencyPlanPrice(p, true)).toLocaleString()} / mo</div>
+                  <div className="tier-discount">{MAX_MONTHS} months: {eur(getAgencyPlanPrice(p, true) * (1 - LONG_TERM_DISCOUNTS[MAX_MONTHS] / 100))} / mo</div>
                 </div>
               );
             })}
@@ -808,17 +819,11 @@ export default function App() {
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M3 3a2 2 0 00-2 2v14a2 2 0 002 2h18a2 2 0 002-2V5a2 2 0 00-2-2H3zm5.5 4a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM4.27 19l5.37-7.16a1 1 0 011.6 0l3.4 4.53 1.72-2.3a1 1 0 011.6 0L21 18.5V19a1 1 0 01-1 1H5a1 1 0 01-.73-.31z"/></svg>
             Photo Posts
           </h3>
-          <p className="card-note">Each photo post is a complete post with caption, concept and design — not just a raw photo. Priced at &euro;{EXTRA_PHOTO_BASE}/post with volume discounts</p>
-          <div className="tiers-grid tiers-grid-5">
-            {[
-              { label: "1–2", discount: 0, min: 1 },
-              { label: "3–5", discount: 5, min: 3 },
-              { label: "6–10", discount: 8, min: 6 },
-              { label: "11–20", discount: 12, min: 11 },
-              { label: "21+", discount: 15, min: 21 },
-            ].map((t) => (
-              <div key={t.label} className={`tier-box ${numPhotos >= t.min ? "tier-active" : ""}`}>
-                <div className="tier-range">{t.label} photos</div>
+          <p className="card-note">Each photo post is a complete post with caption, concept and design — not just a raw photo. Priced at &euro;{EXTRA_PHOTO_BASE}/post, cheaper the more you post per month for each brand</p>
+          <div className="tiers-grid tiers-grid-4">
+            {PHOTO_TIERS.map((t) => (
+              <div key={t.label} className={`tier-box ${numPhotos > 0 && photosPerMonth >= t.min ? "tier-active" : ""}`}>
+                <div className="tier-range">{t.label} photos / mo</div>
                 <div className="tier-price">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - t.discount / 100))}</div>
                 <div className="tier-unit">per photo post</div>
                 {t.discount > 0 && <div className="tier-discount">-{t.discount}%</div>}
@@ -842,7 +847,8 @@ export default function App() {
                   <div className="tier-normal-price">{eur(carouselPlanRate)}</div>
                   <div className="tier-price">{eur(carouselPlanRate * agencyFactor)}</div>
                   <div className="tier-unit">per carousel</div>
-                  <div className="tier-discount">{MAX_MONTHS} months: {eur(carouselPlanRate * (p.quarterly / p.monthly) * agencyFactor)}</div>
+                  <div className="tier-discount">{QUARTERLY_MONTHS} months: {eur(carouselPlanRate * (p.quarterly / p.monthly) * agencyFactor)}</div>
+                  <div className="tier-discount">{MAX_MONTHS} months: {eur(carouselPlanRate * (p.quarterly / p.monthly) * (1 - LONG_TERM_DISCOUNTS[MAX_MONTHS] / 100) * agencyFactor)}</div>
                 </div>
               );
             })}
