@@ -156,21 +156,69 @@ function getAgencyPlanPrice(plan: (typeof PLANS)[number], quarterly: boolean): n
   return getPlanPrice(plan, quarterly) * (1 - AGENCY_DISCOUNT_PCT / 100);
 }
 
-// Per-video rate at our plan prices: a full plan bundle at your pace (its videos plus its carousels,
-// each carousel counting as half a video) costs exactly that plan — monthly, or quarterly at 3 months.
-// The agency discount is then taken off the whole order.
-function calculateTotal(numVideos: number, numBrands: number, months: number) {
+// Our standard rate: the Starter plan's monthly price per video (its 2 carousels count as 1 video).
+// This is the most a video ever costs; everything else is a discount off it.
+const STANDARD_VIDEO_RATE = PLANS[0].monthly / (PLANS[0].videos + PLANS[0].carousels / 2);
+
+// Monthly per-video rate at a plan level: a full plan bundle at this pace costs exactly that plan.
+// Capped at our standard rate, so a bigger plan level never costs more per video.
+function getLevelRate(plan: (typeof PLANS)[number], pace: number): number {
+  return Math.min(STANDARD_VIDEO_RATE, plan.monthly / (Math.min(pace, plan.videos) + plan.carousels / 2));
+}
+
+function getPricing(numVideos: number, numBrands: number, months: number) {
   const pace = numVideos / numBrands / months;
   const plan = getPlanLevel(pace);
   const quarterly = months >= MAX_MONTHS;
-  const price = getPlanPrice(plan, quarterly) / (Math.min(pace, plan.videos) + plan.carousels / 2);
   return {
-    total: Math.round(numVideos * price),
-    price,
     pace,
     plan,
     quarterly,
+    levelRate: getLevelRate(plan, pace),
+    quarterlyFactor: quarterly ? plan.quarterly / plan.monthly : 1,
   };
+}
+
+function getQuarterlyPct(plan: (typeof PLANS)[number]): number {
+  return Math.round((1 - plan.quarterly / plan.monthly) * 100);
+}
+
+const PHOTO_VOLUME_TIP =
+  "Photo posts get cheaper the more you order: 5% off from 3, 8% off from 6, 12% off from 11 and 15% off from 21.";
+const CREATIVE_DIRECTION_TIP =
+  "You decide the topics and formats and handle pre-production, and we execute from there, so we take 12% off.";
+const FILMING_TIP = "You shoot the footage yourselves and we handle the rest, so we take 25% off.";
+
+function eur(amount: number): string {
+  return `€${Math.round(amount).toLocaleString()}`;
+}
+
+// Plain-text table for the email draft; a null row draws a separator line
+function asciiTable(rows: ([string, string] | null)[]): string {
+  const cells = rows.filter((r): r is [string, string] => r !== null);
+  const w1 = Math.max(...cells.map((r) => r[0].length));
+  const w2 = Math.max(...cells.map((r) => r[1].length));
+  const line = `+${"-".repeat(w1 + 2)}+${"-".repeat(w2 + 2)}+`;
+  return [line, ...rows.map((r) => (r ? `| ${r[0].padEnd(w1)} | ${r[1].padStart(w2)} |` : line)), line].join("\n");
+}
+
+function InfoTip({ text }: { text: string }) {
+  return (
+    <span className="info-tip" tabIndex={0} role="note" aria-label={text} data-tip={text}>
+      i
+    </span>
+  );
+}
+
+function DiscountRow({ label, tip, amount }: { label: string; tip: string; amount: number }) {
+  return (
+    <div className="savings-row">
+      <span>
+        {label} <InfoTip text={tip} />
+      </span>
+      <span className="savings-amount">{amount > 0 ? `-${eur(amount)}` : "€0"}</span>
+    </div>
+  );
 }
 
 // Discount curve for extra photos (carousels are priced at half the video rate)
@@ -308,31 +356,86 @@ export default function App() {
   }, [numVideos, months, numBrands]);
   const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(numPhotos, EXTRA_PHOTO_BASE);
 
-  const { total: baseTotal, price: videoPrice, pace, plan, quarterly } = useMemo(
-    () => calculateTotal(numVideos, numBrands, months),
+  const { pace, plan, quarterly, levelRate, quarterlyFactor } = useMemo(
+    () => getPricing(numVideos, numBrands, months),
     [numVideos, numBrands, months]
   );
 
-  // A carousel costs half a video (2 carousels = 1 video), at your own per-video rate
-  const carouselPrice = videoPrice / 2;
-  const carouselsTotal = Math.round(numCarousels * carouselPrice);
+  // A carousel counts as half a video (2 carousels = 1 video)
+  const videoUnits = numVideos + numCarousels / 2;
 
-  // Everything is listed at our plan prices; the agency discount then applies to the whole order
-  const subtotal = baseTotal + numPhotosTotal + carouselsTotal;
+  // The receipt: everything at our standard rates, then each discount in turn
+  const videosStandard = numVideos * STANDARD_VIDEO_RATE;
+  const carouselsStandard = (numCarousels * STANDARD_VIDEO_RATE) / 2;
+  const photosStandard = numPhotos * EXTRA_PHOTO_BASE;
+  const standardTotal = Math.round(videosStandard + carouselsStandard + photosStandard);
+
+  const afterVolume = videoUnits * levelRate + numPhotosTotal;
+  const quarterlySavings = videoUnits * levelRate * (1 - quarterlyFactor);
+  const afterQuarterly = afterVolume - quarterlySavings;
   const agencyFactor = 1 - AGENCY_DISCOUNT_PCT / 100;
-  const afterAgency = subtotal * agencyFactor;
+  const afterAgency = afterQuarterly * agencyFactor;
 
   const cdDiscount = creativeDirection ? 0.88 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
-  const total = Math.round(afterAgency * cdDiscount * filmingDiscount);
+
+  const volumeLine = Math.round(standardTotal - afterVolume);
+  const quarterlyLine = Math.round(quarterlySavings);
+  const agencyLine = Math.round(afterQuarterly - afterAgency);
+  const cdLine = Math.round(afterAgency * (1 - cdDiscount));
+  const filmingLine = Math.round(afterAgency * cdDiscount * (1 - filmingDiscount));
+  // The total is the receipt itself, so the lines always add up exactly
+  const total = standardTotal - volumeLine - quarterlyLine - agencyLine - cdLine - filmingLine;
   const perMonth = Math.round(total / months);
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
 
-  const avgPrice = numVideos > 0 ? (baseTotal / numVideos) * agencyFactor : 0;
+  // What you pay per item after volume, quarterly and agency discounts (before the toggles)
+  const videoRate = levelRate * quarterlyFactor * agencyFactor;
+  const carouselRate = videoRate / 2;
+  const photoRate = numPhotos > 0 ? (numPhotosTotal / numPhotos) * agencyFactor : 0;
+
+  const avgPrice = videoRate;
   const avgPriceDiscounted = avgPrice * cdDiscount * filmingDiscount;
   const toggleDiscountActive = creativeDirection || handleFilming;
+
+  const quarterlyPct = getQuarterlyPct(plan);
+  const volumeTip =
+    `Our standard rate is ${eur(STANDARD_VIDEO_RATE)} per video (our Starter plan's monthly price per video; a carousel counts as half a video). ` +
+    `Posting more videos per month puts you on a bigger plan level that costs less per video. ` +
+    `At ${pace.toFixed(1)} videos per month per brand you're on our ${plan.name} level: ${eur(levelRate)} per video.` +
+    (photoDiscountPct > 0 ? ` Also includes ${photoDiscountPct}% off photo posts for ordering ${numPhotos}.` : "");
+  const quarterlyTip = quarterly
+    ? `You're committing to ${MAX_MONTHS} months, so you get our quarterly plan price instead of monthly: ${quarterlyPct}% less on videos and carousels at the ${plan.name} level.`
+    : `Commit to ${MAX_MONTHS} months to get our quarterly plan price instead of monthly: ${quarterlyPct}% less on videos and carousels at the ${plan.name} level.`;
+  const agencyTip = `As an agency you get ${AGENCY_DISCOUNT_PCT}% off everything (videos, carousels and photos) compared with what our own clients pay on our plans.`;
+
+  const emailBody = [
+    "Let's do this! 🎬",
+    "",
+    `Here's what I put together in the calculator: ${numVideos} videos over ${months} month${months > 1 ? "s" : ""} for ${numBrands} brand${numBrands > 1 ? "s" : ""} ` +
+      `(${pace.toFixed(1)} videos per month per brand, ${plan.name} level).`,
+    "",
+    asciiTable([
+      ["Item", "Amount"],
+      null,
+      [`${numVideos} videos x ${eur(STANDARD_VIDEO_RATE)}`, eur(videosStandard)],
+      ...(numCarousels > 0 ? [[`${numCarousels} carousels x ${eur(STANDARD_VIDEO_RATE / 2)}`, eur(carouselsStandard)] as [string, string]] : []),
+      ...(numPhotos > 0 ? [[`${numPhotos} photo posts x ${eur(EXTRA_PHOTO_BASE)}`, eur(photosStandard)] as [string, string]] : []),
+      null,
+      ["Standard price", eur(standardTotal)],
+      ["Volume discount", `-${eur(volumeLine)}`],
+      ["Quarterly plan discount", `-${eur(quarterlyLine)}`],
+      [`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`],
+      ...(creativeDirection ? [["Creative direction discount (12%)", `-${eur(cdLine)}`] as [string, string]] : []),
+      ...(handleFilming ? [["Filming discount (25%)", `-${eur(filmingLine)}`] as [string, string]] : []),
+      null,
+      ["Total", eur(total)],
+      [`Per month (${months} month${months > 1 ? "s" : ""})`, eur(perMonth)],
+    ]),
+    "",
+  ].join("\n");
 
   return (
     <div className="page">
@@ -364,6 +467,7 @@ export default function App() {
               <span className="toggle-label">
                 {creativeDirection ? "Yes — " : "No"}
                 {creativeDirection && <span className="toggle-discount">12% discount applied</span>}
+                {creativeDirection && <InfoTip text={CREATIVE_DIRECTION_TIP} />}
               </span>
             </div>
           </section>
@@ -384,6 +488,7 @@ export default function App() {
               <span className="toggle-label">
                 {handleFilming ? "Yes — " : "No"}
                 {handleFilming && <span className="toggle-discount">25% discount applied</span>}
+                {handleFilming && <InfoTip text={FILMING_TIP} />}
               </span>
             </div>
           </section>
@@ -417,7 +522,7 @@ export default function App() {
             {/* Photo Posts */}
             <section className="card">
               <label className="card-label">Photo posts</label>
-              <p className="card-note">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post{numPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""}</p>
+              <p className="card-note">&euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}/post{numPhotos > 2 ? ` (${photoDiscountPct}% volume discount)` : ""} <InfoTip text={PHOTO_VOLUME_TIP} /></p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -438,7 +543,7 @@ export default function App() {
             {/* Carousels */}
             <section className="card">
               <label className="card-label">Carousel posts</label>
-              <p className="card-note">&euro;{Math.round(carouselPrice)}/carousel · up to 6 slides · half the price of a video</p>
+              <p className="card-note">&euro;{Math.round(carouselRate)}/carousel · up to 6 slides · half the price of a video</p>
               <div className="slider-row">
                 <input
                   type="range"
@@ -527,7 +632,7 @@ export default function App() {
             {/* Price Breakdown */}
             <section className="card">
               <h2 className="card-label">Price Breakdown</h2>
-              <p className="card-note">Your rate per video is set by your posting pace (videos per month, per brand). Post more often and commit for longer to lower it</p>
+              <p className="card-note">Everything is listed at our standard rates, with each discount you get shown underneath. Hover the i to see where each one comes from</p>
 
               {/* Videos section */}
               <div className="breakdown-section">
@@ -538,12 +643,9 @@ export default function App() {
                 <div className="breakdown-list">
                   <div className="breakdown-row">
                     <span className="breakdown-desc">
-                      {numVideos} videos &times; &euro;{Math.round(videoPrice)}
+                      {numVideos} videos &times; {eur(STANDARD_VIDEO_RATE)}
                     </span>
-                    <span className="breakdown-amount">&euro;{baseTotal.toLocaleString()}</span>
-                  </div>
-                  <div className="breakdown-row">
-                    <span className="breakdown-desc">At our {plan.name} plan, {quarterly ? "quarterly" : "monthly"} rate</span>
+                    <span className="breakdown-amount">{eur(videosStandard)}</span>
                   </div>
                 </div>
               </div>
@@ -558,10 +660,9 @@ export default function App() {
                   <div className="breakdown-list">
                     <div className="breakdown-row">
                       <span className="breakdown-desc">
-                        {numPhotos} photo post{numPhotos > 1 ? "s" : ""} &times; &euro;{Math.round(EXTRA_PHOTO_BASE * (1 - photoDiscountPct / 100))}
-                        {photoDiscountPct > 0 && <span className="discount-badge">-{photoDiscountPct}%</span>}
+                        {numPhotos} photo post{numPhotos > 1 ? "s" : ""} &times; {eur(EXTRA_PHOTO_BASE)}
                       </span>
-                      <span className="breakdown-amount">&euro;{numPhotosTotal.toLocaleString()}</span>
+                      <span className="breakdown-amount">{eur(photosStandard)}</span>
                     </div>
                   </div>
                 </div>
@@ -577,10 +678,10 @@ export default function App() {
                   <div className="breakdown-list">
                     <div className="breakdown-row">
                       <span className="breakdown-desc">
-                        {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; &euro;{Math.round(carouselPrice)}
+                        {numCarousels} carousel{numCarousels > 1 ? "s" : ""} &times; {eur(STANDARD_VIDEO_RATE / 2)}
                         <span className="discount-badge">&frac12; video</span>
                       </span>
-                      <span className="breakdown-amount">&euro;{carouselsTotal.toLocaleString()}</span>
+                      <span className="breakdown-amount">{eur(carouselsStandard)}</span>
                     </div>
                   </div>
                 </div>
@@ -599,42 +700,35 @@ export default function App() {
                 {numPhotos > 0 && (
                   <div className="avg-price-item">
                     <span className="avg-price-label">Avg. per photo post</span>
-                    <span className="avg-price-value">&euro;{Math.round((numPhotosTotal / numPhotos) * agencyFactor)}</span>
+                    <span className="avg-price-value">{eur(photoRate)}</span>
                   </div>
                 )}
                 {numCarousels > 0 && (
                   <div className="avg-price-item">
                     <span className="avg-price-label">Avg. per carousel</span>
-                    <span className="avg-price-value">&euro;{Math.round((carouselsTotal / numCarousels) * agencyFactor)}</span>
+                    <span className="avg-price-value">{eur(carouselRate)}</span>
                   </div>
                 )}
               </div>
 
               <div className="totals">
+                <div className="total-row prepay-row">
+                  <span>Standard price</span>
+                  <span>{eur(standardTotal)}</span>
+                </div>
+                <DiscountRow label="Volume discount" tip={volumeTip} amount={volumeLine} />
+                <DiscountRow label="Quarterly plan discount" tip={quarterlyTip} amount={quarterlyLine} />
+                <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />
+                {creativeDirection && <DiscountRow label="Creative direction discount (12%)" tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
+                {handleFilming && <DiscountRow label="Filming discount (25%)" tip={FILMING_TIP} amount={filmingLine} />}
                 <div className="total-row">
                   <span>Total</span>
-                  <span className="total-amount">&euro;{total.toLocaleString()}</span>
+                  <span className="total-amount">{eur(total)}</span>
                 </div>
                 <div className="total-row prepay-row">
                   <span>Per month{months > 1 ? ` (over ${months} months)` : ""}</span>
-                  <span>&euro;{perMonth.toLocaleString()}</span>
+                  <span>{eur(perMonth)}</span>
                 </div>
-                <div className="savings-row">
-                  <span>Agency discount ({AGENCY_DISCOUNT_PCT}% OFF everything)</span>
-                  <span className="savings-amount">&euro;{Math.round(subtotal - afterAgency).toLocaleString()} saved</span>
-                </div>
-                {creativeDirection && (
-                  <div className="savings-row">
-                    <span>Creative direction discount (12% OFF)</span>
-                    <span className="savings-amount">&euro;{Math.round(afterAgency * (1 - cdDiscount)).toLocaleString()} saved</span>
-                  </div>
-                )}
-                {handleFilming && (
-                  <div className="savings-row">
-                    <span>Filming discount (25% OFF)</span>
-                    <span className="savings-amount">&euro;{Math.round(afterAgency * cdDiscount * (1 - filmingDiscount)).toLocaleString()} saved</span>
-                  </div>
-                )}
               </div>
 
               <h2 className="card-label" style={{ marginTop: "24px" }}>Extra Perks</h2>
@@ -667,6 +761,13 @@ export default function App() {
                     <p className="perk-desc">Included in all shoots if necessary</p>
                   </div>
                 </div>
+                <div className="perk-item">
+                  <svg className="perk-icon-svg" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 100 20 10 10 0 000-20zm1 5v4.59l3.2 3.2-1.41 1.42L11 12.41V7h2z"/></svg>
+                  <div>
+                    <strong className="perk-title">{EXTRA_SECONDS} Extra Seconds per Video</strong>
+                    <p className="perk-desc">Videos can run {EXTRA_SECONDS} seconds longer than on our plans: up to {plan.maxSeconds + EXTRA_SECONDS}s at your level</p>
+                  </div>
+                </div>
               </div>
             </section>
 
@@ -676,7 +777,7 @@ export default function App() {
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
           <h2 className="card-label">Agency Pricing</h2>
-          <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {MAX_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price. Highlighted is your level.</p>
+          <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {MAX_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price. Highlighted is your level. <InfoTip text={`Struck-through prices are what our own clients pay on our monthly plans. The big price is your agency price, ${AGENCY_DISCOUNT_PCT}% less. The ${MAX_MONTHS}-month price starts from our quarterly plan price instead.`} /></p>
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
@@ -724,7 +825,23 @@ export default function App() {
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h12a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm14 3h2a2 2 0 012 2v8a2 2 0 01-2 2h-2V7z"/></svg>
             Carousels
           </h3>
-          <p className="card-note">Each carousel (up to 6 slides) is priced at half your per-video rate — 2 carousels = 1 video. At your current volume that's &euro;{Math.round(carouselPrice)}/carousel.</p>
+          <p className="card-note">Each carousel (up to 6 slides) costs half a video at the same plan level: 2 carousels = 1 video</p>
+          <div className="tiers-grid">
+            {PLANS.map((p, i) => {
+              const from = i === 0 ? MIN_PACE : PLANS[i - 1].videos + 1;
+              const range = i === PLANS.length - 1 ? `${from}+` : from === p.videos ? `${from}` : `${from}–${p.videos}`;
+              const carouselPlanRate = getLevelRate(p, p.videos) / 2;
+              return (
+                <div key={p.name} className={`tier-box ${p.name === plan.name ? "tier-active" : ""}`}>
+                  <div className="tier-range">{range} videos / mo · {p.name}</div>
+                  <div className="tier-normal-price">{eur(carouselPlanRate)}</div>
+                  <div className="tier-price">{eur(carouselPlanRate * agencyFactor)}</div>
+                  <div className="tier-unit">per carousel</div>
+                  <div className="tier-discount">{MAX_MONTHS} months: {eur(carouselPlanRate * (p.quarterly / p.monthly) * agencyFactor)}</div>
+                </div>
+              );
+            })}
+          </div>
         </section>
 
 
@@ -758,7 +875,7 @@ export default function App() {
           <div className="gif-overlay" onClick={() => { setShowGif(false); stopConfetti(); }}>
             <img src={celebrationGif} alt="Let's go!" className="gif-image" onClick={(e) => e.stopPropagation()} />
             <a
-              href={`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Let's do this!")}&body=${encodeURIComponent("Let's do this! 🎬\n\n")}`}
+              href={`mailto:maria@kaimakki.com?subject=${encodeURIComponent("Let's do this!")}&body=${encodeURIComponent(emailBody)}`}
               className="gif-cta-link"
               onClick={(e) => e.stopPropagation()}
             >

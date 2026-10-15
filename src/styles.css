@@ -520,6 +520,54 @@ body {
   font-weight: 800;
 }
 
+/* Info tooltips: the bubble spans the row it sits in, so it never runs off the card */
+.savings-row,
+.toggle-row,
+.card-note,
+.tier-box {
+  position: relative;
+}
+
+.info-tip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  margin-left: 4px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  vertical-align: middle;
+  cursor: help;
+}
+
+.info-tip:hover::after,
+.info-tip:focus::after {
+  content: attr(data-tip);
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(100% + 6px);
+  min-width: 200px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--card);
+  border: 1px solid var(--card-border);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: normal;
+  text-transform: none;
+  text-align: left;
+  white-space: normal;
+  z-index: 20;
+}
+
 /* Stats grid */
 .stats-grid {
   display: grid;
