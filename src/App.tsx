@@ -130,8 +130,6 @@ const TERMS_SECTIONS = [
   },
 ];
 
-const NORMAL_PRICE = 174;
-
 // Our monthly plans (kaimakki.com), using the guaranteed (lower) number of videos per month.
 // Agencies pay 10% less than the plan matching their posting pace.
 const PLANS = [
@@ -150,24 +148,24 @@ function getPlanLevel(pace: number) {
   return PLANS.find((p) => pace <= p.videos) ?? PLANS[PLANS.length - 1];
 }
 
+function getPlanPrice(plan: (typeof PLANS)[number], quarterly: boolean): number {
+  return quarterly ? plan.quarterly : plan.monthly;
+}
+
 function getAgencyPlanPrice(plan: (typeof PLANS)[number], quarterly: boolean): number {
-  return (quarterly ? plan.quarterly : plan.monthly) * (1 - AGENCY_DISCOUNT_PCT / 100);
+  return getPlanPrice(plan, quarterly) * (1 - AGENCY_DISCOUNT_PCT / 100);
 }
 
-function getListDiscount(price: number): number {
-  return Math.round(((NORMAL_PRICE - price) / NORMAL_PRICE) * 100);
-}
-
-// Your per-video rate is set so that a full plan bundle at your pace (its videos plus its carousels,
-// each carousel counting as half a video) costs 10% less than that plan — monthly, or quarterly at 3 months
+// Per-video rate at our plan prices: a full plan bundle at your pace (its videos plus its carousels,
+// each carousel counting as half a video) costs exactly that plan — monthly, or quarterly at 3 months.
+// The agency discount is then taken off the whole order.
 function calculateTotal(numVideos: number, numBrands: number, months: number) {
   const pace = numVideos / numBrands / months;
   const plan = getPlanLevel(pace);
   const quarterly = months >= MAX_MONTHS;
-  const price = getAgencyPlanPrice(plan, quarterly) / (Math.min(pace, plan.videos) + plan.carousels / 2);
+  const price = getPlanPrice(plan, quarterly) / (Math.min(pace, plan.videos) + plan.carousels / 2);
   return {
     total: Math.round(numVideos * price),
-    normalTotal: numVideos * NORMAL_PRICE,
     price,
     pace,
     plan,
@@ -310,7 +308,7 @@ export default function App() {
   }, [numVideos, months, numBrands]);
   const { total: numPhotosTotal, discountPct: photoDiscountPct } = calculateExtrasTotal(numPhotos, EXTRA_PHOTO_BASE);
 
-  const { total: baseTotal, normalTotal, price: videoPrice, pace, plan, quarterly } = useMemo(
+  const { total: baseTotal, price: videoPrice, pace, plan, quarterly } = useMemo(
     () => calculateTotal(numVideos, numBrands, months),
     [numVideos, numBrands, months]
   );
@@ -319,18 +317,22 @@ export default function App() {
   const carouselPrice = videoPrice / 2;
   const carouselsTotal = Math.round(numCarousels * carouselPrice);
 
+  // Everything is listed at our plan prices; the agency discount then applies to the whole order
+  const subtotal = baseTotal + numPhotosTotal + carouselsTotal;
+  const agencyFactor = 1 - AGENCY_DISCOUNT_PCT / 100;
+  const afterAgency = subtotal * agencyFactor;
+
   const cdDiscount = creativeDirection ? 0.88 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
-  const total = Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount * filmingDiscount);
+  const total = Math.round(afterAgency * cdDiscount * filmingDiscount);
+  const perMonth = Math.round(total / months);
   const prepayment = total / 2;
 
   const weeksToDeliver = Math.ceil(numVideos / MAX_PER_WEEK);
 
-  const avgPrice = numVideos > 0 ? baseTotal / numVideos : 0;
+  const avgPrice = numVideos > 0 ? (baseTotal / numVideos) * agencyFactor : 0;
   const avgPriceDiscounted = avgPrice * cdDiscount * filmingDiscount;
   const toggleDiscountActive = creativeDirection || handleFilming;
-  const savings = normalTotal - baseTotal;
-  const discountPct = normalTotal > 0 ? Math.round((savings / normalTotal) * 100) : 0;
 
   return (
     <div className="page">
@@ -536,16 +538,12 @@ export default function App() {
                 <div className="breakdown-list">
                   <div className="breakdown-row">
                     <span className="breakdown-desc">
-                      {numVideos} videos &times;{" "}
-                      {getListDiscount(videoPrice) > 0 && <><span className="price-normal">&euro;{NORMAL_PRICE}</span>{" "}</>}
-                      &euro;{Math.round(videoPrice)}
-                      {getListDiscount(videoPrice) > 0 && <span className="discount-badge">-{getListDiscount(videoPrice)}%</span>}
+                      {numVideos} videos &times; &euro;{Math.round(videoPrice)}
                     </span>
                     <span className="breakdown-amount">&euro;{baseTotal.toLocaleString()}</span>
                   </div>
                   <div className="breakdown-row">
-                    <span className="breakdown-desc">Based on our {plan.name} plan, {quarterly ? "quarterly" : "monthly"} rate</span>
-                    <span className="breakdown-amount">-{AGENCY_DISCOUNT_PCT}%</span>
+                    <span className="breakdown-desc">At our {plan.name} plan, {quarterly ? "quarterly" : "monthly"} rate</span>
                   </div>
                 </div>
               </div>
@@ -601,13 +599,13 @@ export default function App() {
                 {numPhotos > 0 && (
                   <div className="avg-price-item">
                     <span className="avg-price-label">Avg. per photo post</span>
-                    <span className="avg-price-value">&euro;{Math.round(numPhotosTotal / numPhotos)}</span>
+                    <span className="avg-price-value">&euro;{Math.round((numPhotosTotal / numPhotos) * agencyFactor)}</span>
                   </div>
                 )}
                 {numCarousels > 0 && (
                   <div className="avg-price-item">
                     <span className="avg-price-label">Avg. per carousel</span>
-                    <span className="avg-price-value">&euro;{Math.round(carouselsTotal / numCarousels)}</span>
+                    <span className="avg-price-value">&euro;{Math.round((carouselsTotal / numCarousels) * agencyFactor)}</span>
                   </div>
                 )}
               </div>
@@ -617,22 +615,24 @@ export default function App() {
                   <span>Total</span>
                   <span className="total-amount">&euro;{total.toLocaleString()}</span>
                 </div>
+                <div className="total-row prepay-row">
+                  <span>Per month{months > 1 ? ` (over ${months} months)` : ""}</span>
+                  <span>&euro;{perMonth.toLocaleString()}</span>
+                </div>
+                <div className="savings-row">
+                  <span>Agency discount ({AGENCY_DISCOUNT_PCT}% OFF everything)</span>
+                  <span className="savings-amount">&euro;{Math.round(subtotal - afterAgency).toLocaleString()} saved</span>
+                </div>
                 {creativeDirection && (
                   <div className="savings-row">
                     <span>Creative direction discount (12% OFF)</span>
-                    <span className="savings-amount">&euro;{Math.round((baseTotal + numPhotosTotal + carouselsTotal) * 0.1).toLocaleString()} saved</span>
+                    <span className="savings-amount">&euro;{Math.round(afterAgency * (1 - cdDiscount)).toLocaleString()} saved</span>
                   </div>
                 )}
                 {handleFilming && (
                   <div className="savings-row">
                     <span>Filming discount (25% OFF)</span>
-                    <span className="savings-amount">&euro;{Math.round((baseTotal + numPhotosTotal + carouselsTotal) * cdDiscount * 0.25).toLocaleString()} saved</span>
-                  </div>
-                )}
-                {savings > 0 && (
-                  <div className="savings-row">
-                    <span>Agency discount ({discountPct}% OFF)</span>
-                    <span className="savings-amount">&euro;{savings.toLocaleString()} saved</span>
+                    <span className="savings-amount">&euro;{Math.round(afterAgency * cdDiscount * (1 - filmingDiscount)).toLocaleString()} saved</span>
                   </div>
                 )}
               </div>
