@@ -174,12 +174,16 @@ function getLevelRate(plan: (typeof PLANS)[number], pace: number): number {
 function getLevelPricing(count: number, numBrands: number, months: number) {
   const pace = count / numBrands / months;
   const plan = getPlanLevel(pace);
+  const levelRate = getLevelRate(plan, pace);
+  // If the rate is capped at our standard (Starter) rate, you're paying Starter prices,
+  // so the quarterly discount is Starter's too
+  const ratePlan = levelRate >= STANDARD_VIDEO_RATE ? PLANS[0] : plan;
   // Commitment: our quarterly price from 3 months, plus a little extra for 4-6 months
-  const quarterlyFactor = months >= QUARTERLY_MONTHS ? plan.quarterly / plan.monthly : 1;
+  const quarterlyFactor = months >= QUARTERLY_MONTHS ? ratePlan.quarterly / ratePlan.monthly : 1;
   return {
     pace,
     plan,
-    levelRate: getLevelRate(plan, pace),
+    levelRate,
     commitmentFactor: quarterlyFactor * (1 - (LONG_TERM_DISCOUNTS[months] ?? 0) / 100),
   };
 }
