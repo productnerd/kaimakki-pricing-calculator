@@ -190,6 +190,9 @@ function getLevelPricing(count: number, numBrands: number, months: number) {
 }
 
 const VOLUME_TIP = "Videos, carousels and photos each get cheaper the more of them you post per month per brand.";
+const VAT_PCT = 19; // Cyprus standard rate
+const VAT_TIP =
+  "Cyprus VAT at 19%. Businesses in other EU countries with a valid VAT number usually pay no Cyprus VAT (reverse charge).";
 const CREATIVE_DIRECTION_PCT = 10;
 const CREATIVE_DIRECTION_TIP = `You handle topics, formats and pre-production: ${CREATIVE_DIRECTION_PCT}% off.`;
 const FILMING_TIP = "You shoot the footage, we do the rest: 25% off.";
@@ -445,7 +448,9 @@ export default function App() {
   const cdLine = Math.round(afterAgency * (1 - cdDiscount));
   const filmingLine = Math.round(afterAgency * cdDiscount * (1 - filmingDiscount));
   // The total is the receipt itself, so the lines always add up exactly
-  const total = standardTotal - totalVolumeLine - commitmentLine - agencyLine - cdLine - filmingLine;
+  const subtotal = standardTotal - totalVolumeLine - commitmentLine - agencyLine - cdLine - filmingLine;
+  const vatLine = Math.round(subtotal * (VAT_PCT / 100));
+  const total = subtotal + vatLine;
   const perMonth = Math.round(total / months);
   const prepayment = total / 2;
 
@@ -500,7 +505,9 @@ export default function App() {
       ...(creativeDirection ? [[`Creative direction discount (${CREATIVE_DIRECTION_PCT}%)`, `-${eur(cdLine)}`] as [string, string]] : []),
       ...(handleFilming ? [["Filming discount (25%)", `-${eur(filmingLine)}`] as [string, string]] : []),
       null,
-      ["Total", eur(total)],
+      ["Subtotal (excl. VAT)", eur(subtotal)],
+      [`VAT (${VAT_PCT}%)`, eur(vatLine)],
+      ["Total (incl. VAT)", eur(total)],
       [`Per month (${months} month${months > 1 ? "s" : ""})`, eur(perMonth)],
     ]),
     "",
@@ -703,7 +710,7 @@ export default function App() {
             {/* Price Breakdown */}
             <section className="card">
               <h2 className="card-label">Price Breakdown</h2>
-              <p className="card-note">Everything is listed at our standard rates, with each discount you get shown underneath. Hover the i to see where each one comes from</p>
+              <p className="card-note">Everything is listed at our standard rates excl. VAT, with each discount you get shown underneath. Hover the i to see where each one comes from</p>
 
               {/* Videos section */}
               <div className="breakdown-section">
@@ -795,12 +802,22 @@ export default function App() {
                 {AGENCY_DISCOUNT_PCT > 0 && <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />}
                 {creativeDirection && <DiscountRow label={`Creative direction discount (${CREATIVE_DIRECTION_PCT}%)`} tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
                 {handleFilming && <DiscountRow label="Filming discount (25%)" tip={FILMING_TIP} amount={filmingLine} />}
+                <div className="total-row prepay-row">
+                  <span>Subtotal (excl. VAT)</span>
+                  <span>{eur(subtotal)}</span>
+                </div>
+                <div className="total-row prepay-row">
+                  <span>
+                    VAT ({VAT_PCT}%) <InfoTip text={VAT_TIP} />
+                  </span>
+                  <span>+{eur(vatLine)}</span>
+                </div>
                 <div className="total-row">
-                  <span>Total</span>
+                  <span>Total (incl. VAT)</span>
                   <span className="total-amount">{eur(total)}</span>
                 </div>
                 <div className="total-row prepay-row">
-                  <span>Per month{months > 1 ? ` (over ${months} months)` : ""}</span>
+                  <span>Per month{months > 1 ? ` (over ${months} months)` : ""}, incl. VAT</span>
                   <span>{eur(perMonth)}</span>
                 </div>
                 <button className="share-btn" onClick={copyShareLink}>
@@ -857,7 +874,7 @@ export default function App() {
           {AGENCY_DISCOUNT_PCT > 0 ? (
             <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {QUARTERLY_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level. <InfoTip text={`Struck through: our client price. Big number: your agency price (${AGENCY_DISCOUNT_PCT}% less).`} /></p>
           ) : (
-            <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay that plan's price. Commit to {QUARTERLY_MONTHS} months for our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level.</p>
+            <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay that plan's price. Commit to {QUARTERLY_MONTHS} months for our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level. Prices exclude VAT.</p>
           )}
 
           <h3 className="tier-row-label">
