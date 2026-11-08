@@ -189,7 +189,8 @@ function getLevelPricing(count: number, numBrands: number, months: number) {
 }
 
 const VOLUME_TIP = "Videos, carousels and photos each get cheaper the more of them you post per month per brand.";
-const CREATIVE_DIRECTION_TIP = "You handle topics, formats and pre-production: 12% off.";
+const CREATIVE_DIRECTION_PCT = 10;
+const CREATIVE_DIRECTION_TIP = `You handle topics, formats and pre-production: ${CREATIVE_DIRECTION_PCT}% off.`;
 const FILMING_TIP = "You shoot the footage, we do the rest: 25% off.";
 
 function eur(amount: number): string {
@@ -430,7 +431,7 @@ export default function App() {
   const agencyFactor = 1 - AGENCY_DISCOUNT_PCT / 100;
   const afterAgency = afterCommitment * agencyFactor;
 
-  const cdDiscount = creativeDirection ? 0.88 : 1;
+  const cdDiscount = creativeDirection ? 1 - CREATIVE_DIRECTION_PCT / 100 : 1;
   const filmingDiscount = handleFilming ? 0.75 : 1;
 
   // Videos, carousels and photos each get their own volume discount, set by their own monthly count
@@ -495,7 +496,7 @@ export default function App() {
       ...(photoVolumeLine > 0 ? [["  photos", `-${eur(photoVolumeLine)}`] as [string, string]] : []),
       ["Long-term commitment discount", `-${eur(commitmentLine)}`],
       [`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`],
-      ...(creativeDirection ? [["Creative direction discount (12%)", `-${eur(cdLine)}`] as [string, string]] : []),
+      ...(creativeDirection ? [[`Creative direction discount (${CREATIVE_DIRECTION_PCT}%)`, `-${eur(cdLine)}`] as [string, string]] : []),
       ...(handleFilming ? [["Filming discount (25%)", `-${eur(filmingLine)}`] as [string, string]] : []),
       null,
       ["Total", eur(total)],
@@ -535,7 +536,7 @@ export default function App() {
               </button>
               <span className="toggle-label">
                 {creativeDirection ? "Yes — " : "No"}
-                {creativeDirection && <span className="toggle-discount">12% discount applied</span>}
+                {creativeDirection && <span className="toggle-discount">{CREATIVE_DIRECTION_PCT}% discount applied</span>}
                 {creativeDirection && <InfoTip text={CREATIVE_DIRECTION_TIP} />}
               </span>
             </div>
@@ -791,7 +792,7 @@ export default function App() {
                 {photoVolumeLine > 0 && <DiscountRow sub label="Photos" tip={photoVolumeTip} amount={photoVolumeLine} />}
                 <DiscountRow label="Long-term commitment discount" tip={commitmentTip} amount={commitmentLine} />
                 <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />
-                {creativeDirection && <DiscountRow label="Creative direction discount (12%)" tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
+                {creativeDirection && <DiscountRow label={`Creative direction discount (${CREATIVE_DIRECTION_PCT}%)`} tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
                 {handleFilming && <DiscountRow label="Filming discount (25%)" tip={FILMING_TIP} amount={filmingLine} />}
                 <div className="total-row">
                   <span>Total</span>
