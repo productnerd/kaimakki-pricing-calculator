@@ -131,13 +131,14 @@ const TERMS_SECTIONS = [
 ];
 
 // Our monthly plans (kaimakki.com), using the guaranteed (lower) number of videos per month.
-// Agencies pay 10% less than the plan matching their posting pace.
+// Agencies pay the plan matching their posting pace (less AGENCY_DISCOUNT_PCT, when set).
 const PLANS = [
   { name: "Starter", videos: 4, monthly: 870, quarterly: 740, carousels: 2, maxSeconds: 40 },
   { name: "Growth", videos: 6, monthly: 1160, quarterly: 950, carousels: 2, maxSeconds: 45 },
   { name: "Let's go", videos: 8, monthly: 1390, quarterly: 1180, carousels: 3, maxSeconds: 50 },
 ];
-const AGENCY_DISCOUNT_PCT = 10;
+// Agency discount is switched off for now; set above 0 to bring it (and everything that shows it) back
+const AGENCY_DISCOUNT_PCT = 0;
 const EXTRA_SECONDS = 5; // agency videos may run this much longer than the matching plan allows
 const QUARTERLY_MONTHS = 3; // committing to 3 months unlocks our quarterly price
 const MAX_MONTHS = 6;
@@ -495,7 +496,7 @@ export default function App() {
       ...(carouselVolumeLine > 0 ? [["  carousels", `-${eur(carouselVolumeLine)}`] as [string, string]] : []),
       ...(photoVolumeLine > 0 ? [["  photos", `-${eur(photoVolumeLine)}`] as [string, string]] : []),
       ["Long-term commitment discount", `-${eur(commitmentLine)}`],
-      [`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`],
+      ...(AGENCY_DISCOUNT_PCT > 0 ? [[`Agency discount (${AGENCY_DISCOUNT_PCT}%)`, `-${eur(agencyLine)}`] as [string, string]] : []),
       ...(creativeDirection ? [[`Creative direction discount (${CREATIVE_DIRECTION_PCT}%)`, `-${eur(cdLine)}`] as [string, string]] : []),
       ...(handleFilming ? [["Filming discount (25%)", `-${eur(filmingLine)}`] as [string, string]] : []),
       null,
@@ -791,7 +792,7 @@ export default function App() {
                 {carouselVolumeLine > 0 && <DiscountRow sub label="Carousels" tip={carouselVolumeTip} amount={carouselVolumeLine} />}
                 {photoVolumeLine > 0 && <DiscountRow sub label="Photos" tip={photoVolumeTip} amount={photoVolumeLine} />}
                 <DiscountRow label="Long-term commitment discount" tip={commitmentTip} amount={commitmentLine} />
-                <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />
+                {AGENCY_DISCOUNT_PCT > 0 && <DiscountRow label={`Agency discount (${AGENCY_DISCOUNT_PCT}%)`} tip={agencyTip} amount={agencyLine} />}
                 {creativeDirection && <DiscountRow label={`Creative direction discount (${CREATIVE_DIRECTION_PCT}%)`} tip={CREATIVE_DIRECTION_TIP} amount={cdLine} />}
                 {handleFilming && <DiscountRow label="Filming discount (25%)" tip={FILMING_TIP} amount={filmingLine} />}
                 <div className="total-row">
@@ -853,7 +854,11 @@ export default function App() {
         {/* FULL WIDTH — Tier Reference */}
         <section className="card card-full">
           <h2 className="card-label">Agency Pricing</h2>
-          <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {QUARTERLY_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level. <InfoTip text={`Struck through: our client price. Big number: your agency price (${AGENCY_DISCOUNT_PCT}% less).`} /></p>
+          {AGENCY_DISCOUNT_PCT > 0 ? (
+            <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay {AGENCY_DISCOUNT_PCT}% less than that plan. Commit to {QUARTERLY_MONTHS} months and it's {AGENCY_DISCOUNT_PCT}% less than our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level. <InfoTip text={`Struck through: our client price. Big number: your agency price (${AGENCY_DISCOUNT_PCT}% less).`} /></p>
+          ) : (
+            <p className="card-note">Your posting pace (videos per month, per brand) matches one of our plan levels, and you pay that plan's price. Commit to {QUARTERLY_MONTHS} months for our quarterly price, with a bit more off up to {MAX_MONTHS} months. Highlighted is your level.</p>
+          )}
 
           <h3 className="tier-row-label">
             <svg className="breakdown-section-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V5a2 2 0 00-2-2H4zm6.5 4.2a.5.5 0 01.5 0l3.5 2a.5.5 0 010 .87l-3.5 2a.5.5 0 01-.75-.43V7.63a.5.5 0 01.25-.43zM1 20a1 1 0 011-1h20a1 1 0 110 2H2a1 1 0 01-1-1z"/></svg>
@@ -866,7 +871,7 @@ export default function App() {
               return (
                 <div key={p.name} className={`tier-box ${p.name === plan.name ? "tier-active" : ""}`}>
                   <div className="tier-range">{range} videos / mo · {p.name}</div>
-                  <div className="tier-normal-price">&euro;{p.monthly.toLocaleString()}</div>
+                  {AGENCY_DISCOUNT_PCT > 0 && <div className="tier-normal-price">&euro;{p.monthly.toLocaleString()}</div>}
                   <div className="tier-price">&euro;{Math.round(getAgencyPlanPrice(p, false)).toLocaleString()}</div>
                   <div className="tier-unit">per month for {p.videos} videos + {p.carousels} carousels, up to {p.maxSeconds + EXTRA_SECONDS}s each</div>
                   <div className="tier-discount">{QUARTERLY_MONTHS} months: &euro;{Math.round(getAgencyPlanPrice(p, true)).toLocaleString()} / mo</div>
@@ -905,7 +910,7 @@ export default function App() {
               return (
                 <div key={p.name} className={`tier-box ${numCarousels > 0 && p.name === carousel.plan.name ? "tier-active" : ""}`}>
                   <div className="tier-range">{range} carousels / mo</div>
-                  <div className="tier-normal-price">{eur(carouselPlanRate)}</div>
+                  {AGENCY_DISCOUNT_PCT > 0 && <div className="tier-normal-price">{eur(carouselPlanRate)}</div>}
                   <div className="tier-price">{eur(carouselPlanRate * agencyFactor)}</div>
                   <div className="tier-unit">per carousel</div>
                   <div className="tier-discount">{QUARTERLY_MONTHS} months: {eur(carouselPlanRate * (p.quarterly / p.monthly) * agencyFactor)}</div>
